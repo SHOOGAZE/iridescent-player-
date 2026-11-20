@@ -511,7 +511,7 @@ function mkSwitch(x, y, on, onChange) {
 
 /* ================= state ================= */
 const SK = 'deck.s', CK = 'deck.cues';
-const S = Object.assign({ vol: .7, bass: .5, treb: .5, drive: .3, tape: .4, fxTape: 1, fxDrive: 0, fxComp: 0, range: 0, src: 0, lock: 0, mode: 0, tmode: 0 },
+const S = Object.assign({ vol: .7, bass: .5, treb: .5, drive: .3, tape: .4, fxTape: 1, fxDrive: 0, fxComp: 0, range: 0, src: 0, lock: 0, mode: 0, tmode: 0, scr: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
 S.vari = 0; // varispeed always starts at 0
 const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) { /* ignore */ } };
@@ -623,7 +623,73 @@ function doPlay() {
 }
 function doPause() { audio.pause(); }
 function togglePlay() { if (audio.paused) doPlay(); else doPause(); }
-function seek(t) { const d = audio.duration; if (!isFinite(d) || !cur()) return; audio.currentTime = clamp(t, 0, Math.max(0, d - .05)); }
+/* ================= scratch engine: the finger drives a buffer, forwards and backwards ================= */
+const SCR = { active: false, pos: 0, rate: 0, node: null, rev: null, out: null, ng: null, wasPlaying: false, restart: false };
+const curPos = () => (SCR.active ? SCR.pos : (audio.currentTime || 0));
+function scrKeep(t, buf) {
+  // keep the decoded disc in memory for scratching (mono if it would be huge)
+  try {
+    let b = buf;
+    if (buf.length * buf.numberOfChannels * 4 > 120e6 && buf.numberOfChannels > 1) {
+      const m = ctx.createBuffer(1, buf.length, buf.sampleRate), d = m.getChannelData(0), a = buf.getChannelData(0), c = buf.getChannelData(1);
+      for (let i = 0; i < d.length; i++) d[i] = (a[i] + c[i]) * .5; b = m;
+    }
+    if (b.length * b.numberOfChannels * 4 <= 120e6) t.buf = b;
+  } catch (e) { /* ignore */ }
+}
+function scrInit() {
+  if (SCR.out || !E) return;
+  SCR.out = ctx.createGain(); SCR.out.connect(E.bus);
+  const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  const ns = ctx.createBufferSource(); ns.buffer = nb; ns.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.1;
+  SCR.ng = ctx.createGain(); SCR.ng.gain.value = 0; ns.connect(bp); bp.connect(SCR.ng); SCR.ng.connect(E.bus); ns.start();
+}
+function scrRev(pos) {
+  const b = SCR.buf, sr = b.sampleRate, w1 = Math.min(b.length, Math.floor((pos + 1.5) * sr)), w0 = Math.max(0, w1 - Math.floor(12 * sr)), n = w1 - w0;
+  const rb = ctx.createBuffer(b.numberOfChannels, Math.max(1, n), sr);
+  for (let ch = 0; ch < b.numberOfChannels; ch++) { const s = b.getChannelData(ch), d = rb.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = s[w1 - 1 - i]; }
+  SCR.rev = { buf: rb, w0, w1 };
+}
+function scrStop() {
+  const nd = SCR.node; if (!nd) return; SCR.node = null;
+  const n = ctx.currentTime; try { nd.g.gain.cancelScheduledValues(n); nd.g.gain.setTargetAtTime(0, n, .004); nd.s.stop(n + .04); } catch (e) { /* ignore */ }
+}
+function scrStart(dir) {
+  scrStop(); const n = ctx.currentTime, sr = SCR.buf.sampleRate;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(1, n + .006); g.connect(SCR.out);
+  const s = ctx.createBufferSource(); let off;
+  if (dir > 0) { s.buffer = SCR.buf; off = SCR.pos; }
+  else { if (!SCR.rev || SCR.pos * sr > SCR.rev.w1 || SCR.pos * sr < SCR.rev.w0 + sr * .3) scrRev(SCR.pos); s.buffer = SCR.rev.buf; off = (SCR.rev.w1 - SCR.pos * sr) / sr; }
+  s.playbackRate.value = Math.max(.01, Math.abs(SCR.rate)); s.connect(g);
+  s.start(0, clamp(off, 0, Math.max(0, s.buffer.duration - .01))); SCR.node = { s, g, dir };
+}
+function scrBegin() {
+  const t = cur(); if (!S.scr || !t || !t.buf || S.src === 1) return false;
+  initAudio(); if (ctx.state !== 'running') ctx.resume(); scrInit();
+  SCR.buf = t.buf; SCR.rev = null; SCR.pos = audio.currentTime || 0; SCR.rate = 0; SCR.wasPlaying = !audio.paused; SCR.active = true; SCR.restart = false;
+  audio.pause(); return true;
+}
+function scrEnd() {
+  if (!SCR.active) return;
+  scrStop(); SCR.active = false; SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02);
+  try { audio.currentTime = SCR.pos; } catch (e) { /* ignore */ }
+  if (SCR.wasPlaying) doPlay();
+}
+function scrTick(dt, vel) {
+  const tg = clamp(vel / 198, -6, 6), dur = SCR.buf.duration;
+  SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / .022));
+  SCR.pos += SCR.rate * dt;
+  if (SCR.pos <= 0) { SCR.pos = 0; if (SCR.rate < 0) SCR.rate = 0; }
+  if (SCR.pos >= dur - .05) { SCR.pos = dur - .05; if (SCR.rate > 0) SCR.rate = 0; }
+  const dir = Math.abs(SCR.rate) < .03 ? 0 : (SCR.rate > 0 ? 1 : -1), nd = SCR.node, sr = SCR.buf.sampleRate;
+  if (!dir) { if (nd) scrStop(); }
+  else if (!nd || nd.dir !== dir || SCR.restart || (dir < 0 && SCR.rev && SCR.pos * sr < SCR.rev.w0 + sr * .15)) { SCR.restart = false; scrStart(dir); }
+  else nd.s.playbackRate.setTargetAtTime(Math.abs(SCR.rate), ctx.currentTime, .008);
+  SCR.ng.gain.setTargetAtTime(Math.min(.03, Math.abs(SCR.rate) * .014) * (dir ? 1 : 0), ctx.currentTime, .015);
+}
+function seek(t) {
+  if (SCR.active) { SCR.pos = clamp(t, 0, Math.max(0, SCR.buf.duration - .05)); SCR.restart = true; return; } const d = audio.duration; if (!isFinite(d) || !cur()) return; audio.currentTime = clamp(t, 0, Math.max(0, d - .05)); }
 function seekBy(d) { seek((audio.currentTime || 0) + d); }
 function playIdx(i) { loadTrack(i, true); }
 function nextIdx(auto) {
@@ -657,7 +723,7 @@ function saveCues() {
 }
 function loadTrack(i, play) {
   if (i < 0 || i >= Q.list.length) return;
-  Q.idx = i; const t = Q.list[i];
+  Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) x.buf = null; });
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; audio.load();
   cues = loadCues(t.key); loop = { a: null, b: null, on: false }; mainCue = 0;
@@ -739,6 +805,7 @@ async function computePeaks(t) {
     let mx = 0; for (let b = 0; b < n; b++) if (pk[b] > mx) mx = pk[b];
     for (let b = 0; b < n; b++) pk[b] = Math.pow(pk[b] / (mx || 1), .7);
     t.peaks = pk; if (!t.dur) t.dur = buf.duration;
+    if (cur() === t) scrKeep(t, buf);
   } catch (e) { t.nopk = true; }
   t.peaksBusy = false; ui.trackChanged(true);
 }
@@ -746,7 +813,7 @@ async function computePeaks(t) {
 /* ================= cue / loop logic ================= */
 function cuePad(i) {
   if (!cur()) { ui.msg('NO DISC'); return; }
-  if (cues[i] == null) { cues[i] = audio.currentTime || 0; saveCues(); ui.cuesChanged(); ui.msg('CUE ' + (i + 1) + ' SET'); }
+  if (cues[i] == null) { cues[i] = curPos(); saveCues(); ui.cuesChanged(); ui.msg('CUE ' + (i + 1) + ' SET'); }
   else { seek(cues[i]); ui.msg('CUE ' + (i + 1) + '  ' + fmt(cues[i])); }
 }
 function clearCue(i) { if (cues[i] != null) { cues[i] = null; saveCues(); ui.cuesChanged(); ui.msg('CUE ' + (i + 1) + ' CLEAR'); return true; } return false; }
@@ -1011,6 +1078,61 @@ const ledA = led(fx(1) + 32, 872, ''), ledB = led(fx(2) + 32, 872, ''), ledLoop 
 mkBtn({ x: 392, y: 1000, w: 70, h: 40, cls: 'grey', text: 'LIB', id: 'lib', up: (e, c) => { if (!c) libOpen(); } });
 lab('LIBRARY', 427, 1056, { cls: 'sm' });
 
+/* ================= HELP mode: tap a control, the display explains it ================= */
+const ledHelp = led(50, 42, '');
+mkBtn({ x: 22, y: 52, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help', up: (e, c) => { if (c) return; helpOn = !helpOn; ledHelp.classList.toggle('on', helpOn); helpName = helpOn ? 'HELP MODE' : ''; helpDesc = helpOn ? 'TAP ANY CONTROL TO SEE WHAT IT DOES  TAP HELP AGAIN TO EXIT' : ''; helpAt = performance.now(); } });
+const bScr = mkBtn({ x: 84, y: 52, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'SCR', id: 'scr', up: (e, c) => { if (c) return; S.scr = S.scr ? 0 : 1; save(); bScr.classList.toggle('dark', !!S.scr); bScr.classList.toggle('grey', !S.scr); ui.msg('SCRATCH ' + (S.scr ? 'ON' : 'OFF')); } });
+const HELP = {
+  SOURCE: ['SOURCE', 'FILE PLAYS YOUR AUDIO FILES  LINE LISTENS TO THE INPUT  USE HEADPHONES'],
+  RANGE: ['RANGE', 'VARISPEED RANGE  8 OR 16 PERCENT'],
+  'sw:TAPE': ['TAPE FX', 'SWITCHES THE TAPE STAGE  WOW  FLUTTER  HISS  SOFT SATURATION'],
+  'sw:DRIVE': ['DRIVE FX', 'SWITCHES THE OVERDRIVE STAGE ON OR OFF'],
+  'sw:COMP': ['COMP FX', 'SWITCHES THE COMPRESSOR  EVENS OUT THE LEVEL'],
+  DISPLAY: ['DISPLAY', 'TAP THE TOP TO SWITCH ELAPSED AND REMAINING  DRAG THE WAVEFORM TO SEEK'],
+  VOL: ['VOLUME', 'OUTPUT LEVEL  DOUBLE TAP FOR THE DEFAULT'],
+  VARI: ['VARISPEED', 'SLOWER OR FASTER  DOUBLE TAP RESETS TO ZERO  LOCK KEEPS THE PITCH'],
+  JOG: ['JOG', 'TOUCH TO HOLD THE DISC  MOVE IT BOTH WAYS TO SCRATCH  RELEASE TO PLAY ON  RING SHOWS PROGRESS'],
+  SCR: ['SCRATCH', 'ON  TOUCHING THE DISC HOLDS IT LIKE A RECORD  MOVE IT TO SCRATCH  OFF  JOG ONLY SCRUBS AND NUDGES'],
+  PLAY: ['PLAY / PAUSE', 'STARTS AND STOPS THE DISC'],
+  PREV: ['PREV', 'RESTARTS THE DISC  PRESS AGAIN NEAR THE START FOR THE PREVIOUS ONE'],
+  REW: ['REW', 'HOLD TO SEARCH BACKWARD'],
+  FF: ['FF', 'HOLD TO SEARCH FORWARD'],
+  NEXT: ['NEXT', 'LOADS THE NEXT DISC'],
+  CUE: ['MAIN CUE', 'PAUSED  SETS THE START POINT  PLAYING  STOPS AND RETURNS TO IT'],
+  A: ['LOOP IN', 'MARKS THE LOOP START  HOLD TO CLEAR THE LOOP'],
+  B: ['LOOP OUT', 'MARKS THE LOOP END AND STARTS THE LOOP'],
+  LOOP: ['LOOP', 'TURNS THE A-B LOOP ON OR OFF'],
+  MODE: ['PLAY MODE', 'NORMAL  REPEAT ONE  REPEAT ALL  SHUFFLE'],
+  LOCK: ['PITCH LOCK', 'KEEPS THE PITCH WHEN THE SPEED CHANGES'],
+  LIB: ['LIBRARY', 'OPENS THE DISC SHELF  ADD FILES OR LOAD THE DEMO DISC'],
+  'kn:BASS': ['BASS', 'LOW SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
+  'kn:TREBLE': ['TREBLE', 'HIGH SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
+  'kn:DRIVE': ['DRIVE', 'HOW HARD THE OVERDRIVE PUSHES  NEEDS THE DRIVE SWITCH ON'],
+  'kn:TAPE': ['TAPE', 'HOW MUCH TAPE WOBBLE AND HISS  NEEDS THE TAPE SWITCH ON']
+};
+for (let i = 1; i <= 8; i++) HELP['pad' + i] = ['HOT CUE ' + i, 'TAP TO SET  TAP AGAIN TO JUMP HERE  HOLD TO CLEAR'];
+function helpKey(t) {
+  let n;
+  if ((n = t.closest('.btn'))) {
+    if (n.dataset.id === 'help') return null;
+    const tx = n.textContent.trim(); if (/^[1-8]$/.test(tx)) return 'pad' + tx; if (tx) return tx;
+    return ({ 38: 'PREV', 116: 'REW', 194: 'PLAY', 314: 'FF', 392: 'NEXT' })[Math.round(parseFloat(n.style.left))] || null;
+  }
+  if ((n = t.closest('.sw'))) { const k = ({ 172: 'SOURCE', 252: 'RANGE', 332: 'sw:TAPE', 394: 'sw:DRIVE', 456: 'sw:COMP' })[Math.round(parseFloat(n.style.left))]; return k || null; }
+  if ((n = t.closest('.knob'))) return ({ 38: 'kn:BASS', 126: 'kn:TREBLE', 214: 'kn:DRIVE', 302: 'kn:TAPE' })[Math.round(parseFloat(n.style.left))] || null;
+  if ((n = t.closest('.vfader'))) return Math.round(parseFloat(n.style.left)) < 200 ? 'VOL' : 'VARI';
+  if (t.closest('.hubbtn')) return 'PLAY';
+  if (t.closest('.cdisc')) return 'JOG';
+  if (t.closest('.dmhit')) return 'DISPLAY';
+  return null;
+}
+chassis.addEventListener('pointerdown', e => {
+  if (!helpOn || e.target.closest('#lib,#power')) return;
+  const k = helpKey(e.target); if (!k || !HELP[k]) return;
+  e.preventDefault(); e.stopPropagation();
+  helpName = clean(HELP[k][0]); helpDesc = clean(HELP[k][1]); helpAt = performance.now();
+}, true);
+
 /* ================= board: PCB under frosted plastic, rim, haze ================= */
 let frostEl = null;
 (function () {
@@ -1099,27 +1221,34 @@ function refreshRing() {
 let discAng = 0, lastAng = -1;
 const jog = { on: false, id: null, a0: 0, t0: 0, vel: 0 };
 const angOf = e => { const r = disc.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
-disc.addEventListener('pointerdown', e => { e.preventDefault(); if (jog.on) return; jog.on = true; jog.id = e.pointerId; try { disc.setPointerCapture(e.pointerId); } catch (_) { } jog.a0 = angOf(e); jog.t0 = e.timeStamp; jog.vel = 0; });
+disc.addEventListener('pointerdown', e => { e.preventDefault(); if (jog.on) return; jog.on = true; jog.id = e.pointerId; try { disc.setPointerCapture(e.pointerId); } catch (_) { } jog.a0 = angOf(e); jog.t0 = e.timeStamp; jog.vel = 0; scrBegin(); });
 disc.addEventListener('pointermove', e => {
   if (!jog.on || e.pointerId !== jog.id) return;
   const a = angOf(e); let d = a - jog.a0; if (d > 180) d -= 360; if (d < -180) d += 360;
   const dt = Math.max(1, e.timeStamp - jog.t0); jog.vel = jog.vel * .6 + (d / dt * 1000) * .4; jog.a0 = a; jog.t0 = e.timeStamp;
-  discAng += d; if (audio.paused && cur()) seekBy(d / 360 * 1.8);
+  discAng += d; if (!SCR.active && audio.paused && cur()) seekBy(d / 360 * 1.8);
 });
-const jogEnd = e => { if (e.pointerId === jog.id) jog.on = false; };
+const jogEnd = e => { if (e.pointerId === jog.id) { jog.on = false; scrEnd(); } };
 disc.addEventListener('pointerup', jogEnd); disc.addEventListener('pointercancel', jogEnd);
 
 /* ================= display drawing ================= */
+let helpOn = false, helpName = '', helpDesc = '', helpAt = 0;
 let msgText = '', msgUntil = 0, trackStart = 0, splashing = false;
 function drawDisplay(now) {
   dctx.clearRect(0, 0, cv.width, cv.height); dctx.drawImage(bg, 0, 0);
-  const t = cur(), line = S.src === 1, pos = audio.currentTime || 0, dur = (t && (t.dur || (isFinite(audio.duration) ? audio.duration : 0))) || 0;
+  const t = cur(), line = S.src === 1, pos = curPos(), dur = (t && (t.dur || (isFinite(audio.duration) ? audio.duration : 0))) || 0;
   text('IRIDESCENT', 0, 0, 1);
   text(line ? 'LINE' : t ? 'T' + pad2(Q.idx + 1) + '/' + pad2(Q.list.length) : 'EMPTY', 70, 0, .6);
   const md = MODES[S.mode]; text(md, COLS - width(md), 0, S.mode ? 1 : .45);
   text(line ? '--:--' : (S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos)), 0, 9, 1, 2);
   const vr = (baseRate() - 1) * 100, vs = (vr >= -.05 ? '+' : '-') + Math.abs(vr).toFixed(1) + '%';
   text(vs, COLS - width(vs, 2), 9, .9, 2);
+  if (helpOn) {
+    text(helpName, 0, 25, 1);
+    const wd = width(helpDesc), cyc = wd + 40, off = Math.max(0, Math.floor((now - helpAt - 700) / 55)) % cyc;
+    text(helpDesc, 1 - off, 36, .9); if (wd > COLS) text(helpDesc, 1 - off + cyc, 36, .9);
+    return;
+  }
   if (msgText && now < msgUntil) text(msgText, 0, 25, 1);
   else if (line) text('LIVE  USE PHONES', 0, 25, .85);
   else if (!t) text('NO DISC  TAP LIB', 0, 25, .85);
@@ -1234,13 +1363,14 @@ function tick(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   const playing = !audio.paused;
   if (loop.on && loop.b != null && playing && audio.currentTime >= loop.b - .02) audio.currentTime = loop.a;
+  if (SCR.active) { if (now - jog.t0 > 50) jog.vel *= .72; scrTick(dt, jog.vel); }
   if (jog.on && playing) { if (now - jog.t0 > 70) jog.vel *= .8; const tg = 1 + clamp(jog.vel / (198 * baseRate()) - 1, -1, 1) * .12; nudge += (tg - nudge) * .3; }
   else { nudge += (1 - nudge) * .3; if (Math.abs(nudge - 1) < .002) nudge = 1; }
   const want = clamp(baseRate() * nudge, .25, 4);
   if (Math.abs(audio.playbackRate - want) > .0005) applyRate();
   if (!jog.on && playing) discAng += 198 * audio.playbackRate * dt;
   if (discAng !== lastAng) { cdrot.style.transform = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; lastAng = discAng; }
-  const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? (audio.currentTime || 0) / d : 0);
+  const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? curPos() / d : 0);
   if (!splashing && now - lastDraw >= 50 && !document.hidden) { lastDraw = now; drawDisplay(now); }
   requestAnimationFrame(tick);
 }
@@ -1259,15 +1389,19 @@ window.addEventListener('keydown', e => {
 window.addEventListener('dragover', e => e.preventDefault());
 window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !audio.paused) wakeOn(); });
+function drawIcon(S) {
+  const c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'); g.scale(S / 180, S / 180);
+  const bgG = g.createLinearGradient(0, 0, 180, 180); bgG.addColorStop(0, '#f1d9d0'); bgG.addColorStop(.5, '#eef1f4'); bgG.addColorStop(1, '#bfe6ee'); g.fillStyle = bgG; g.fillRect(0, 0, 180, 180);
+  const rg = g.createRadialGradient(80, 76, 8, 90, 90, 64); rg.addColorStop(0, '#ffffff'); rg.addColorStop(.6, '#dfe9f2'); rg.addColorStop(1, '#c9b8d8');
+  g.fillStyle = rg; g.beginPath(); g.arc(90, 90, 64, 0, 6.283); g.fill(); g.strokeStyle = '#8f959e'; g.lineWidth = 3; g.stroke();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(90, 90, 20, 0, 6.283); g.fill(); g.stroke(); g.fillStyle = '#0b0b0e'; g.beginPath(); g.arc(90, 90, 7, 0, 6.283); g.fill();
+  g.fillStyle = '#e8321e'; g.fillRect(150, 22, 14, 14);
+  return c;
+}
 (function icon180() {
   try {
-    const c = document.createElement('canvas'); c.width = c.height = 180; const g = c.getContext('2d');
-    const bgG = g.createLinearGradient(0, 0, 180, 180); bgG.addColorStop(0, '#f1d9d0'); bgG.addColorStop(.5, '#eef1f4'); bgG.addColorStop(1, '#bfe6ee'); g.fillStyle = bgG; g.fillRect(0, 0, 180, 180);
-    const rg = g.createRadialGradient(80, 76, 8, 90, 90, 64); rg.addColorStop(0, '#ffffff'); rg.addColorStop(.6, '#dfe9f2'); rg.addColorStop(1, '#c9b8d8');
-    g.fillStyle = rg; g.beginPath(); g.arc(90, 90, 64, 0, 6.283); g.fill(); g.strokeStyle = '#8f959e'; g.lineWidth = 3; g.stroke();
-    g.fillStyle = '#fff'; g.beginPath(); g.arc(90, 90, 20, 0, 6.283); g.fill(); g.stroke(); g.fillStyle = '#0b0b0e'; g.beginPath(); g.arc(90, 90, 7, 0, 6.283); g.fill();
-    g.fillStyle = '#e8321e'; g.fillRect(150, 22, 14, 14);
-    const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = c.toDataURL('image/png'); document.head.appendChild(l);
+    const l = document.createElement('link'); l.rel = 'apple-touch-icon'; l.href = drawIcon(180).toDataURL('image/png'); document.head.appendChild(l);
+    window.__icon = drawIcon;
   } catch (e) { /* ignore */ }
 })();
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(() => { });
