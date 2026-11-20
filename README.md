@@ -29,10 +29,6 @@ DJ mode (hold JOG): [mixer guide](screens/guide-mixer.jpg), Russian: [screens/gu
 
 ![Power-on, splash, scratch, library](screens/states.jpg)
 
-Where the screen is roomy the player stays one player: the disc's own colours bleed softly into the background.
-
-![Desktop, PLAY](screens/desktop-play.jpg)
-
 DJ mode on a tablet or a desktop is one console: two decks with a vertical mixer strip between them.
 
 ![Desktop, DJ](screens/desktop-dj.jpg)
