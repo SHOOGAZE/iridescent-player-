@@ -18,7 +18,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-behavior:none;touch-action:none;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:var(--sans)}
-#glow{position:fixed;inset:-18%;pointer-events:none;opacity:0;filter:blur(90px) saturate(1.25);transition:opacity 1.2s ease,background 1.2s ease}
+#glow{display:none;position:fixed;inset:-18%;pointer-events:none;opacity:0;filter:blur(90px) saturate(1.25);transition:opacity 1.2s ease,background 1.2s ease}
 #turn{position:fixed;left:14px;top:14px;z-index:90;display:none;padding:7px 14px;border-radius:99px;background:rgba(20,22,26,.78);border:1px solid rgba(255,255,255,.18);color:#e9ecef;font:700 10px/1 'SF Mono',ui-monospace,Menlo,monospace;letter-spacing:.14em;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #desk{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#1d1f24 0%,#0b0c0e 60%,#040405 100%)}
 #stage{position:absolute;left:0;top:0;width:1000px;height:500px;transform-origin:0 0;will-change:transform}
@@ -335,12 +335,13 @@ html.lite .knob.st .krot{transition:none}
 .dmhit{position:absolute;z-index:6;touch-action:none}
 
 /* ================= HOST: mixer panel + two decks ================= */
-#stage.host{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
-#edge{position:fixed;left:0;right:0;bottom:0;height:30px;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;touch-action:none}
-#edge i{width:7px;height:7px;border-radius:50%;background:rgba(40,44,52,.28);margin:0 6px;transition:background .2s,box-shadow .2s}
-#edge i.on{background:rgba(40,44,52,.85)}
-#edge i.pl{box-shadow:0 0 0 2px rgba(232,50,30,.95)}
-#cat{position:fixed;left:0;right:0;top:0;z-index:19;display:none;touch-action:none}
+#stage.host{transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s ease}
+#pg{position:fixed;z-index:20;display:none;align-items:center;transform:translate(-50%,-50%)}
+#pg i{width:8px;height:8px;border-radius:50%;background:rgba(40,44,52,.3);margin:0 6px;transition:background .2s,box-shadow .2s;position:relative}
+#pg i::before{content:"";position:absolute;inset:-12px}
+#pg i.on{background:rgba(40,44,52,.88)}
+#pg i.pl{box-shadow:0 0 0 2px rgba(232,50,30,.95)}
+.hubbtn{pointer-events:none !important}
 #decks{position:absolute;left:0;top:0;width:100%;overflow:hidden}
 #decks .trk{position:absolute;left:0;top:0;height:100%;display:flex;transition:transform .34s cubic-bezier(.2,.8,.2,1)}
 #decks iframe{border:0;height:100%;flex:none;display:block;background:transparent}
@@ -360,6 +361,8 @@ html.lite .knob.st .krot{transition:none}
 <script>
 (function () {
 'use strict';
+/* gapless hand-off after scratch/play is experimental and OFF by default (open index.html#gapless, or set localStorage iridescent.gapless = 1, to try it) */
+const GAPLESS = (() => { try { return location.hash.indexOf('gapless') >= 0 || localStorage.getItem('iridescent.gapless') === '1'; } catch (e) { return false; } })();
 const DJ = (() => { try { if (location.hash === '#mix') return true; if (location.hash === '#play') return false; return localStorage.getItem('iridescent.dj') === '1'; } catch (e) { return false; } })();
 const DK = (window.__DECK || new URLSearchParams(location.search).get('deck') || (DJ ? '' : 'A')).toUpperCase().replace(/[^AB]/g, '');
 const setMode = dj => { try { localStorage.setItem('iridescent.dj', dj ? '1' : '0'); history.replaceState(null, '', location.pathname + location.search + (dj ? '#mix' : '#play')); } catch (e) { /* ignore */ } setTimeout(() => location.reload(), 350); };
@@ -422,7 +425,8 @@ function fit() {
 function glowFit() {
   const g = document.getElementById('glow'), t = document.getElementById('turn'); if (!g) return;
   const vw = window.innerWidth, vh = window.innerHeight;
-  g.style.opacity = vw > PW * view.s + 220 ? '.42' : '0';
+  const roomy = !HOST && DK === 'A' && window.parent === window && vw > PW * view.s + 220;   // never on phones, never inside DJ frames: a big blur costs GPU and can starve audio
+  g.style.display = roomy ? 'block' : 'none'; g.style.opacity = roomy ? '.42' : '0';
   if (t) t.style.display = (vh < 500 && vw > vh * 1.25) ? 'block' : 'none';
 }
 function mkKnob(o) {
@@ -604,11 +608,12 @@ function buildHost() {
     split: { x: 30, y: 740, w: 160, h: 34 }, auto: { x: 8, y: 840, w: 96, h: 34 }, play: { x: 116, y: 840, w: 96, h: 34 },
     cap: [['CUE L  MASTER R', 110, 792], ['AUTO MIX', 56, 892], ['EXIT TO PLAYER', 164, 892]], xf: { XL: 35, XW: 150, XY: 990, la: [14, 990], lb: [206, 990] }
   } : {
-    w: 500, h: 214, mx: [250, 20], ms: [250, 66, 44],
-    k: { A: { lo: [46, 66], hi: [106, 66], fl: [166, 66] }, B: { lo: [454, 66], hi: [394, 66], fl: [334, 66] } }, t: { A: [106, 20], B: [394, 20] },
-    cue: { A: { x: 20, y: 126, w: 64, h: 30 }, B: { x: 416, y: 126, w: 64, h: 30 } },
-    split: { x: 210, y: 126, w: 80, h: 30 }, auto: { x: 96, y: 126, w: 60, h: 30 }, play: { x: 344, y: 126, w: 60, h: 30 },
-    cap: [['CUE L  MASTER R', 250, 166], ['AUTO MIX', 126, 166], ['EXIT TO PLAYER', 374, 166]], xf: { XL: 70, XW: 360, XY: 194, la: [36, 194], lb: [464, 194] }
+    w: 500, h: 418, mx: [250, 34], ms: [250, 112, 56],
+    k: { A: { lo: [52, 112], hi: [118, 112], fl: [184, 112] }, B: { lo: [448, 112], hi: [382, 112], fl: [316, 112] } }, t: { A: [118, 34], B: [382, 34] },
+    cue: { A: { x: 21, y: 212, w: 56, h: 40 }, B: { x: 423, y: 212, w: 56, h: 40 } },
+    pa: { A: { x: 87, y: 212, w: 56, h: 40 }, B: { x: 357, y: 212, w: 56, h: 40 } },
+    split: { x: 217, y: 212, w: 66, h: 40 }, auto: { x: 153, y: 212, w: 54, h: 40 }, play: { x: 293, y: 212, w: 54, h: 40 },
+    cap: [['CUE L  MASTER R', 250, 270], ['AUTO MIX', 180, 270], ['TO PLAYER', 320, 270], ['DECK A', 115, 270], ['DECK B', 385, 270]], xf: { XL: 70, XW: 360, XY: 352, la: [36, 352], lb: [464, 352] }
   };
   PH = G.h; stage.style.height = G.h + 'px'; stage.style.width = G.w + 'px';
   const deskEl = document.getElementById('desk'), decks = document.createElement('div'), trk = document.createElement('div'), frames = {};
@@ -633,7 +638,9 @@ function buildHost() {
   mkBtn({ x: sp.x, y: sp.y, w: sp.w, h: sp.h, cls: 'grey', text: 'SPLIT', up: (e, c) => { if (c) return; M.split = M.split ? 0 : 1; splitLed.classList.toggle('on', !!M.split); saveM(); ap(); } });
   const au = G.auto, autoLed = led(au.x + au.w / 2, au.y - 8, M.auto ? 'on' : '');
   mkBtn({ x: au.x, y: au.y, w: au.w, h: au.h, cls: 'grey', text: 'AUTO', up: (e, c) => { if (c) return; M.auto = M.auto ? 0 : 1; autoLed.classList.toggle('on', !!M.auto); saveM(); } });
-  const pl = G.play; mkBtn({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, cls: 'grey', text: 'PLAY', up: (e, c) => { if (!c) setMode(false); } });
+  const playLed = {};
+  if (G.pa) ['A', 'B'].forEach(id => { const c = G.pa[id]; playLed[id] = led(c.x + c.w / 2, c.y - 8, ''); mkBtn({ x: c.x, y: c.y, w: c.w, h: c.h, cls: 'grey', text: '\u25B6', up: (e, cc) => { if (cc) return; const d = MIX.decks[id]; if (d) d.act('play'); } }); });
+  const pl = G.play; mkBtn({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, cls: 'grey', text: G.pa ? 'EXIT' : 'PLAY', up: (e, c) => { if (!c) setMode(false); } });
   G.cap.forEach(([t, x, y]) => lab(t, x, y, { cls: 'sm', c: '#6b7078' }));
   /* crossfader */
   const XL = G.xf.XL, XW = G.xf.XW, XY = G.xf.XY;
@@ -651,24 +658,31 @@ function buildHost() {
   const xe = e => { if (!xd || e.pointerId !== xd.id) return; const d0 = xd; xd = null; xfd.classList.remove('act'); saveM(); if (!d0.mv && e.type === 'pointerup') { const n = performance.now(); if (n - xlt < 320) { M.xf = .5; xr(); ap(); saveM(); } xlt = n; } };
   xfd.addEventListener('pointerup', xe); xfd.addEventListener('pointercancel', xe);
   /* layout: one deck at a time on a phone held upright, both side by side when the window is wide */
-  const edge = document.createElement('div'); edge.id = 'edge'; edge.innerHTML = '<i></i><i></i>'; document.body.appendChild(edge);
-  const cat = document.createElement('div'); cat.id = 'cat'; document.body.appendChild(cat);
-  const dots = edge.querySelectorAll('i');
+  const pg = document.createElement('div'); pg.id = 'pg'; pg.innerHTML = '<i></i><i></i>'; document.body.appendChild(pg);
+  const dots = pg.querySelectorAll('i');
   let open = false; stage.classList.add('host');
-  function setOpen(o) { open = o; cat.style.display = o && !WIDE ? 'block' : 'none'; hostFit(); }
+  let lay = null;
+  /* the mixer slides in sideways over the control zone: p = 0 parked off the right edge, 1 = in place */
+  function place(p, anim) {
+    if (!lay) return; const D = 540 * lay.sd;
+    stage.style.opacity = p > 0 ? 1 : 0;
+    stage.style.transform = 'translate(' + (lay.ox + (1 - p) * D) + 'px,' + lay.oy + 'px) scale(' + lay.ms + ')';
+    ['A', 'B'].forEach(k => { try { frames[k].contentWindow.__slide(p, anim); } catch (e) { /* ignore */ } });   // the deck's lower half leaves as the mixer arrives: one clean seam
+  }
+  function setOpen(o) { open = o; stage.style.transition = ''; hostFit(); }
+  MIX.drag = p => { stage.style.transition = 'none'; stage.style.pointerEvents = 'auto'; place(Math.max(0, Math.min(1, p)), false); };
+  MIX.dragEnd = o => setOpen(o);
   function show(id) { sel = id; dots[0].classList.toggle('on', id === 'A'); dots[1].classList.toggle('on', id === 'B'); hostFit(); }
+  /* swipes: sideways over the jog area = the other deck; up / down over the control buttons = mixer / back */
   MIX.swipe = d => { if (d === 'A' || d === 'B') show(d); else if (d === 'up') setOpen(true); else if (d === 'down') setOpen(false); };
-  cat.addEventListener('pointerdown', () => setOpen(false));
-  let eg = null;
-  edge.addEventListener('pointerdown', e => { eg = { x: e.clientX, y: e.clientY }; try { edge.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ } });
-  edge.addEventListener('pointerup', e => { if (!eg) return; const dx = e.clientX - eg.x, dy = e.clientY - eg.y; eg = null; if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) setOpen(dy < 0); else if (Math.abs(dx) > 40) show(dx < 0 ? 'B' : 'A'); else setOpen(!open); });
-  setInterval(() => { ['A', 'B'].forEach((k, i) => { let p = false; try { p = !!(MIX.decks[k] && MIX.decks[k].playing()); } catch (e) { /* ignore */ } dots[i].classList.toggle('pl', p); }); }, 300);
+  dots.forEach((d, i) => d.addEventListener('pointerup', () => show(i ? 'B' : 'A')));
+  setInterval(() => { ['A', 'B'].forEach((k, i) => { let p = false; try { p = !!(MIX.decks[k] && MIX.decks[k].playing()); } catch (e) { /* ignore */ } dots[i].classList.toggle('pl', p); if (playLed[k]) playLed[k].classList.toggle('on', p); }); }, 300);
   function hostFit() {
     try { glowFit(); } catch (e) { /* ignore */ }
     const vw = window.innerWidth, vh = window.innerHeight;
     if ((vw / vh > 1.25 && vw >= 700 && vh >= 500) !== WIDE) { location.reload(); return; }
     if (WIDE) {
-      edge.style.display = 'none'; cat.style.display = 'none';
+      pg.style.display = 'none'; stage.style.opacity = 1; stage.style.pointerEvents = 'auto';
       const bw = 526, bh = 1096, mw = G.w + 26, s = Math.min(vw / (2 * bw + mw), vh / bh, 2); view.s = s;
       const x0 = (vw - (2 * bw + mw) * s) / 2, y0 = (vh - bh * s) / 2;
       decks.style.height = '100%'; trk.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;transition:none';
@@ -677,19 +691,25 @@ function buildHost() {
       stage.style.transform = 'translate(' + (x0 + (bw + 13) * s) + 'px,' + (y0 + 13 * s) + 'px) scale(' + s + ')';
       return;
     }
-    const ps = Math.min(vw / (G.w + 26), 1.7, (vh * .3) / (PH + 12)); view.s = ps;
-    const ph = PH * ps + 10;
-    stage.style.transform = 'translate(' + (vw - G.w * ps) / 2 + 'px,' + (open ? vh - ph + 2 : vh + 30) + 'px) scale(' + ps + ')';
-    cat.style.bottom = ph + 'px'; decks.style.height = vh + 'px';
+    // the mixer sits exactly over the deck's control zone (hot cues, transport, function row); the deck scales as in its own fit()
+    const sd = Math.min(vw / 526, vh / 1096, 2), ox = (vw - 500 * sd) / 2, oy = (vh - 1070 * sd) / 2; view.s = sd;
+    lay = { sd, ox, oy: oy + 652 * sd, ms: sd, vw }; place(open ? 1 : 0, true);
+    stage.style.pointerEvents = open ? 'auto' : 'none';
+    pg.style.display = 'flex'; pg.style.left = (vw / 2 + 50 * sd) + 'px'; pg.style.top = (oy + 640 * sd) + 'px';
+    decks.style.height = vh + 'px';
     frames.A.style.width = frames.B.style.width = vw + 'px'; trk.style.width = 2 * vw + 'px';
     trk.style.transform = 'translateX(' + (sel === 'A' ? 0 : -vw) + 'px)';
   }
   show('A');
   window.addEventListener('resize', hostFit); window.addEventListener('orientationchange', () => setTimeout(hostFit, 120));
-  /* swipe the mixer panel sideways to change deck */
+  /* swipe the mixer panel down (or up) to get the control buttons back */
   let sw0 = null;
-  chassis.addEventListener('pointerdown', e => { if (e.target === chassis) sw0 = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
-  chassis.addEventListener('pointerup', e => { if (sw0 && e.pointerId === sw0.id) { const dx = e.clientX - sw0.x; const dy = e.clientY - sw0.y; if (dy > 50 && dy > Math.abs(dx)) setOpen(false); else if (Math.abs(dx) > 50) show(dx < 0 ? 'B' : 'A'); } sw0 = null; });
+  chassis.addEventListener('pointerdown', e => { if (e.target === chassis) { sw0 = { x: e.clientX, y: e.clientY, id: e.pointerId, h: false }; try { chassis.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ } } });
+  chassis.addEventListener('pointermove', e => { if (!sw0 || e.pointerId !== sw0.id) return; const dx = e.clientX - sw0.x, dy = e.clientY - sw0.y; if (!sw0.h && Math.abs(dx) > 10 && Math.abs(dx) > 1.3 * Math.abs(dy)) sw0.h = true; if (sw0.h) MIX.drag(1 - Math.max(0, dx) / (500 * lay.sd)); });
+  chassis.addEventListener('pointerup', e => { if (sw0 && e.pointerId === sw0.id) { const dx = e.clientX - sw0.x, dy = e.clientY - sw0.y; if (sw0.h) setOpen(dx / (500 * lay.sd) < .3); else if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) setOpen(false); } sw0 = null; });
+  chassis.addEventListener('pointercancel', () => { if (sw0 && sw0.h) setOpen(true); sw0 = null; });
+  let hwx = 0; chassis.addEventListener('wheel', e => { if (Math.abs(e.deltaX) < Math.abs(e.deltaY) * 1.2 || e.target.closest('.knob,.vfader,.btn,.hfader')) return; e.preventDefault(); hwx += e.deltaX; if (Math.abs(hwx) > 90) { if (hwx < 0) setOpen(false); hwx = 0; } }, { passive: false });
+  const mt = el('', chassis, 'position:absolute;left:170px;top:0;width:160px;height:40px;cursor:pointer;touch-action:none'); mt.addEventListener('pointerup', () => setOpen(false));
   const KM = { q: ['A', 'play'], w: ['A', 'cue'], e: ['A', 'sync'], r: ['A', 'loop'], u: ['B', 'play'], i: ['B', 'cue'], o: ['B', 'sync'], p: ['B', 'loop'] };
   MIX.key = (e, up) => {
     if (e.ctrlKey || e.metaKey || e.altKey || (e.target && /input|textarea/i.test(e.target.tagName))) return false;
@@ -818,7 +838,8 @@ function initAudio() {
   const vol = ctx.createGain(), lim = ctx.createDynamicsCompressor();
   lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .08;
   treb.connect(tape.i); tape.o.connect(drive.i); drive.o.connect(comp.i); comp.o.connect(vol); vol.connect(lim); lim.connect(MX ? MX.input(DK) : ctx.destination);
-  const src = ctx.createMediaElementSource(audio), elg = ctx.createGain(); src.connect(elg); elg.connect(bus);
+  const src = ctx.createMediaElementSource(audio); let elg = null;
+  if (GAPLESS) { elg = ctx.createGain(); src.connect(elg); elg.connect(bus); } else src.connect(bus);
   E = { bus, bass, treb, tape, drive, comp, g1, g2, lp, hg, pre, post, vol, src, elg, line: null, stream: null };
   applyFx();
   return E;
@@ -951,7 +972,7 @@ function handCheck() {
   h.tries++; h.lat = clamp(h.lat - d, .05, 1.5); handSeek();
 }
 function scrFinish(play) {
-  if (play && !SCR.hand && E && E.elg && SCR.buf && SCR.pos < SCR.buf.duration - 1.2) { handStart(); return; }
+  if (GAPLESS && play && !SCR.hand && E && E.elg && SCR.buf && SCR.pos < SCR.buf.duration - 1.2) { handStart(); return; }
   scrFinishHard(play);
 }
 function scrFinishHard(play) {
@@ -1404,14 +1425,8 @@ function mkFader(o) {
 mkFader({ x: 44, y: 322, len: 260, value: S.vol, def: .7, onChange: v => { S.vol = v; save(); initAudio(); applyFx(); volLab.textContent = Math.round(v * 100); } });
 const vFader = mkFader({ x: 456, y: 322, len: 260, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
 
-/* ---- hub = big PLAY / PAUSE ---- */
-const PLAYI = '<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>';
-const PAUSEI = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4.5" height="16" rx="1"/><rect x="13.5" y="4" width="4.5" height="16" rx="1"/></svg>';
-const hub = el('hubbtn', chassis, 'left:' + (JX - 46) + 'px;top:' + (JY - 46) + 'px;width:92px;height:92px'); hub.innerHTML = PLAYI;
-{ let pid = null;
-  hub.addEventListener('pointerdown', e => { e.preventDefault(); if (pid !== null) return; pid = e.pointerId; try { hub.setPointerCapture(pid); } catch (_) { } hub.classList.add('down'); });
-  const up = e => { if (e.pointerId !== pid) return; pid = null; hub.classList.remove('down'); if (e.type === 'pointerup') togglePlay(); };
-  hub.addEventListener('pointerup', up); hub.addEventListener('pointercancel', up); }
+/* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
+const hub = el('hubbtn', chassis, 'left:' + (JX - 46) + 'px;top:' + (JY - 46) + 'px;width:92px;height:92px');
 
 /* ---- cue point strip: 8 tall hot-cue pads (thumb zone) ---- */
 const cueLed = [], pdn = [];
@@ -1536,7 +1551,6 @@ function helpKey(t) {
   if ((n = t.closest('.sw'))) { const k = ({ 172: 'SOURCE', 252: 'RANGE', 332: 'sw:TAPE', 394: 'sw:DRIVE', 456: 'sw:COMP' })[Math.round(parseFloat(n.style.left))]; return k || null; }
   if ((n = t.closest('.knob'))) return ({ 38: 'kn:BASS', 126: 'kn:TREBLE', 214: 'kn:DRIVE', 302: 'kn:TAPE' })[Math.round(parseFloat(n.style.left))] || null;
   if ((n = t.closest('.vfader'))) return Math.round(parseFloat(n.style.left)) < 200 ? 'VOL' : 'VARI';
-  if (t.closest('.hubbtn')) return 'PLAY';
   if (t.closest('.cdisc')) return 'JOG';
   if (t.closest('.dmhit')) return 'DISPLAY';
   return null;
@@ -1661,7 +1675,8 @@ function refreshRing() {
 let discAng = 0, lastAng = -1;
 const jog = { on: false, id: null, a0: 0, t0: 0, vel: 0, bend: false };
 const angOf = e => { const r = disc.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
-disc.addEventListener('pointerdown', e => { e.preventDefault(); if (jog.on) return; jog.on = true; jog.id = e.pointerId; try { disc.setPointerCapture(e.pointerId); } catch (_) { } jog.a0 = angOf(e); jog.t0 = e.timeStamp; jog.vel = 0;
+disc.addEventListener('pointerdown', e => { e.preventDefault(); if (jog.on) return;
+  { const r0 = disc.getBoundingClientRect(); if (Math.hypot(e.clientX - (r0.left + r0.width / 2), e.clientY - (r0.top + r0.height / 2)) < r0.width * .17) return; }   // the spindle is not a handle jog.on = true; jog.id = e.pointerId; try { disc.setPointerCapture(e.pointerId); } catch (_) { } jog.a0 = angOf(e); jog.t0 = e.timeStamp; jog.vel = 0;
   { const r = disc.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); jog.bend = S.jm === 1 && Math.hypot(dx, dy) > r.width * .36; if (jog.bend) { ui.msg('BEND'); return; } }
   if (SCR.active) { SCR.coast = false; SCR.search = false; SCR.wasPlaying = SCR.motor > 0 || SCR.wasPlaying; } else scrBegin(false, 0); });
 disc.addEventListener('pointermove', e => {
@@ -1805,7 +1820,7 @@ ui.msg = (t, ms) => { msgText = clean(t); msgUntil = performance.now() + (ms || 
 ui.trackChanged = soft => { if (!soft) { trackStart = performance.now(); lastRing = 0; ringLeds.forEach(l => l.classList.remove('on')); } refreshRing(); if (libEl.classList.contains('open')) libBuild(); };
 ui.cuesChanged = () => { cueLed.forEach((l, i) => l.classList.toggle('on', cues[i] != null)); refreshRing(); };
 ui.loopChanged = () => { ledA.classList.toggle('on', loop.a != null); ledB.classList.toggle('on', loop.b != null); ledLoop.classList.toggle('on', !!loop.on); refreshRing(); };
-ui.playState = p => { hub.classList.toggle('on', p); hub.innerHTML = p ? PAUSEI : PLAYI; icon(bPlay, p ? IC.pause : IC.play); ledPlay.classList.toggle('on', p); };
+ui.playState = p => { hub.classList.toggle('on', p); icon(bPlay, p ? IC.pause : IC.play); ledPlay.classList.toggle('on', p); };
 ui.varChanged = () => { const v = (baseRate() - 1) * 100; varLab.textContent = (v >= -.05 ? '+' : '-') + Math.abs(v).toFixed(1) + '%'; };
 ui.libBuild = libBuild;
 
@@ -1838,11 +1853,48 @@ if ('mediaSession' in navigator) {
   h('seekbackward', () => seekBy(-10)); h('seekforward', () => seekBy(10)); h('seekto', d => seek(d.seekTime));
 }
 if (window.parent !== window) {
-  let sg = null; const inter = '.knob,.btn,.vfader,.cdisc,.hubbtn,.sw,.dmhit,#lib';
-  window.addEventListener('pointerdown', e => { sg = (e.target.closest && e.target.closest(inter)) ? null : { x: e.clientX, y: e.clientY, id: e.pointerId }; }, true);
+  /* the whole lower half of the deck (hot cues, transport, function row, FX knobs, LIB) slides sideways as the mixer arrives; p = 0..1 */
+  window.__slide = (p, anim) => {
+    const tr = anim ? 'translate .26s cubic-bezier(.2,.8,.2,1)' : 'none';
+    [...chassis.children].forEach(n => { if (n.offsetTop >= 640 && n.offsetHeight < 600) { n.style.transition = tr; n.style.translate = p ? (-p * 540) + 'px 0' : ''; } });
+  };
+  /* two zones on a deck: the jog area (display, disc surround) swipes sideways to the other deck; the control zone (hot cues, transport, function row) swipes up / down to the mixer and back */
+  let sg = null; const inter = '.knob,.btn,.vfader,.cdisc,.sw,#lib';   // the display (.dmhit) is a tap target but may start a swipe
+  const zoneOf = y => { const r = chassis.getBoundingClientRect(), u = (y - r.top) / (r.height / 1070); return u >= 648 && u <= 962 ? 'ctl' : 'jog'; };
+  window.addEventListener('pointerdown', e => {
+    const t = e.target, z = zoneOf(e.clientY), btn = t.closest && t.closest('.btn');
+    if (z === 'ctl' && btn) sg = { x: e.clientX, y: e.clientY, id: e.pointerId, z, btn };
+    else if (t.closest && t.closest(inter)) sg = null;
+    else sg = { x: e.clientX, y: e.clientY, id: e.pointerId, z, btn: null, dm: !!(t.closest && t.closest('.dmhit')) };
+  }, true);
+  window.addEventListener('pointermove', e => {
+    if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y;
+    const kill = () => { if (sg.btn) { try { sg.btn.dispatchEvent(new PointerEvent('pointercancel', { pointerId: e.pointerId, bubbles: true })); } catch (er) { /* ignore */ } sg.btn = null; } sg.swiped = true; };
+    if (sg.z === 'ctl' && !sg.h && Math.abs(dx) > 10 && Math.abs(dx) > 1.3 * Math.abs(dy)) { sg.h = true; kill(); }   // sideways over the control zone: the mixer follows the finger
+    if (sg.h) { try { window.parent.__MIX.drag(-dx / chassis.getBoundingClientRect().width); } catch (er) { /* ignore */ } return; }
+    if (sg.btn && Math.abs(dy) > 24 && Math.abs(dy) > 1.6 * Math.abs(dx)) kill();   // a swipe that began on a key: release the key, keep the swipe
+  }, true);
+  /* trackpad: a two-finger sideways swipe does the same as a drag (jog area = other deck, control zone = mixer) */
+  let whx = 0, whT = 0;
+  window.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY) * 1.2) return;
+    const t = e.target; if (t.closest && t.closest(inter)) return;
+    e.preventDefault(); const n = performance.now(); if (n - whT > 350) whx = 0; whT = n; whx += e.deltaX;
+    if (Math.abs(whx) < 90) return;
+    const dir = whx > 0 ? -1 : 1; whx = 0; whT = n + 500;   // dir -1 = finger moved left
+    try {
+      const m = window.parent.__MIX, z = zoneOf(e.clientY);
+      if (z === 'jog') m.swipe(dir < 0 ? 'B' : 'A'); else m.swipe(dir < 0 ? 'up' : 'down');
+    } catch (err) { /* ignore */ }
+  }, { passive: false });
   window.addEventListener('pointerup', e => {
-    if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y; sg = null;
-    try { const m = window.parent.__MIX; if (!m || !m.swipe) return; if (Math.abs(dx) > 60 && Math.abs(dx) > 1.6 * Math.abs(dy)) m.swipe(dx < 0 ? 'B' : 'A'); else if (Math.abs(dy) > 70 && Math.abs(dy) > 1.6 * Math.abs(dx)) m.swipe(dy < 0 ? 'up' : 'down'); } catch (err) { /* ignore */ }
+    if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y, z = sg.z, dm = sg.dm, hh = sg.h; sg = null;
+    try {
+      const m = window.parent.__MIX; if (!m || !m.swipe) return;
+      if (hh) { m.dragEnd(-dx / chassis.getBoundingClientRect().width > .3); return; }
+      if (z === 'jog' && Math.abs(dx) > 60 && Math.abs(dx) > 1.6 * Math.abs(dy)) { if (dm) e.stopImmediatePropagation(); m.swipe(dx < 0 ? 'B' : 'A'); }
+      else if (z === 'ctl' && Math.abs(dy) > 40 && Math.abs(dy) > 1.4 * Math.abs(dx)) m.swipe(dy < 0 ? 'up' : 'down');
+    } catch (err) { /* ignore */ }
   }, true);
 }
 const hostKey = (e, up) => { try { return window.parent !== window && window.parent.__MIX && window.parent.__MIX.key && window.parent.__MIX.key(e, up); } catch (err) { return false; } };

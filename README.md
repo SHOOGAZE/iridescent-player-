@@ -25,7 +25,9 @@ Russian version: [screens/guide-ru.jpg](screens/guide-ru.jpg). In the app, the H
 
 ![Help mode](screens/help.jpg)
 
-DJ mode (hold JOG): [mixer guide](screens/guide-mixer.jpg), Russian: [screens/guide-mixer-ru.jpg](screens/guide-mixer-ru.jpg).
+DJ mode (hold JOG) on a phone: the mixer opens over the control buttons.
+
+<img src="screens/mixer.jpg" width="260" alt="Mixer">
 
 ![Power-on, splash, scratch, library](screens/states.jpg)
 
@@ -37,10 +39,10 @@ Keyboard (DJ mode): `Q W E R` deck A play / cue / sync / loop, `U I O P` the sam
 
 ## Features
 
-- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone it is a light DJ mode, in portrait only: two decks A/B (swipe left/right to switch; two dots at the bottom show the active deck, red ring = playing), a mixer panel (swipe up to open, swipe down or tap outside to close; crossfader, LOW / HI, morphing FILTER, MASTER, CUE pre-listen with SPLIT) and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. PLAY in the mixer goes back. SYNC follows the other deck's tempo. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
+- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone it is a light DJ mode, in portrait only: two decks A/B and a mixer. Swipe left/right over the JOG area (free space or the display, not the disc itself, which scratches) to switch deck; two dots next to the JOG label show the active deck (red ring = playing). Swipe sideways in the control-button zone (hot cues, transport, function row): the whole lower half of the deck (including the FX knobs and LIB) slides away and the mixer takes its place, following your finger; swipe it back to the right (or press EXIT) to close, a vertical swipe works too (with a mouse: drag; on a trackpad: two-finger sideways swipe); The mixer has crossfader, LOW / HI, morphing FILTER, MASTER, CUE pre-listen with SPLIT and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. SYNC follows the other deck's tempo. The disc hub is just a spindle; PLAY lives in the transport row. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
 - **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG modes VINYL / CDJ (rim bends the speed).
 - **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display, the red LED pulses on the beat. **SYNC** locks the deck to the master tempo via varispeed (8/16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
-- **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on without a gap: the scratch engine keeps playing while the media element restarts silently (iOS needs ~0.4 s after a seek), then the two are crossfaded. The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
+- **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on. (Experimental: `index.html#gapless` hands the sound back without the ~0.4 s hole iOS leaves after a seek; it is off by default until it is verified on a real iPhone.) The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
 - **8 hot cues** per track: tap to set or jump, hold to clear. Stored per file.
 - **A-B loop**, **MAIN CUE**, **PREV / REW / PLAY / FF / NEXT**, play modes.
 - **Weighted knobs**: values glide on a damped spring, a quick flick keeps turning for a moment like a DJ-deck encoder, double tap glides back to default, and the audio parameters morph instead of jumping.
