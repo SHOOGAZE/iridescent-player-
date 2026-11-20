@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="IRIDESCENT">
 <meta name="theme-color" content="#0b0c0f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-32.png">
 <title>IRIDESCENT</title>
 <style>
 :root{--ink:#1d1f24;--ink2:#4a4f58;--line:#8d939c;--red:#e8321e;--led-off:#b9bdc4;
@@ -16,6 +18,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-behavior:none;touch-action:none;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:var(--sans)}
+#glow{position:fixed;inset:-18%;pointer-events:none;opacity:0;filter:blur(90px) saturate(1.25);transition:opacity 1.2s ease,background 1.2s ease}
+#turn{position:fixed;left:14px;top:14px;z-index:90;display:none;padding:7px 14px;border-radius:99px;background:rgba(20,22,26,.78);border:1px solid rgba(255,255,255,.18);color:#e9ecef;font:700 10px/1 'SF Mono',ui-monospace,Menlo,monospace;letter-spacing:.14em;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #desk{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#1d1f24 0%,#0b0c0e 60%,#040405 100%)}
 #stage{position:absolute;left:0;top:0;width:1000px;height:500px;transform-origin:0 0;will-change:transform}
 
@@ -289,8 +293,8 @@ html.lite .knob.st .krot{transition:none}
 #lib .lb{padding:10px 9px;font-size:10px;letter-spacing:.1em}
 #lib{padding:26px 24px 20px}
 #lib .empty{padding:30px 6px;text-align:center;font:700 11px/1.6 var(--mono);letter-spacing:.14em;color:#5f616a}
-#lib .shelf-g{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;padding:6px 2px}
-#lib .tile{display:block;padding:0;background:none;box-shadow:none;text-align:center}
+#lib .shelf-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 10px;padding:6px 2px}
+#lib .tile{display:block;min-width:0;padding:0;background:none;box-shadow:none;text-align:center}
 #lib .tile .tcd{position:relative;width:100%;aspect-ratio:1;border-radius:50%;box-shadow:0 5px 9px rgba(40,50,62,.38),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8);transition:transform .18s}
 #lib .tile:active .tcd{transform:scale(.94)}
 #lib .tile .tdisc{position:absolute;inset:0;border-radius:50%}
@@ -332,12 +336,11 @@ html.lite .knob.st .krot{transition:none}
 
 /* ================= HOST: mixer panel + two decks ================= */
 #stage.host{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
-#hdl{position:fixed;left:0;right:0;bottom:0;height:30px;z-index:20;display:flex;align-items:stretch;background:linear-gradient(#1d1f24,#0b0c0e);border-top:1px solid #2b2e34;font:600 10px/1 var(--mono);letter-spacing:.14em;color:#80838b;touch-action:none;user-select:none}
-#hdl b{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:600}
-#hdl b.gr{flex:2.2}
-#hdl b.on{color:#fff}
-#hdl b i{width:6px;height:6px;border-radius:50%;background:#3a3d44;margin-left:8px}
-#hdl b.pl i{background:#ff4a30;box-shadow:0 0 6px #ff4a30}
+#edge{position:fixed;left:0;right:0;bottom:0;height:30px;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;touch-action:none}
+#edge i{width:7px;height:7px;border-radius:50%;background:rgba(40,44,52,.28);margin:0 6px;transition:background .2s,box-shadow .2s}
+#edge i.on{background:rgba(40,44,52,.85)}
+#edge i.pl{box-shadow:0 0 0 2px rgba(232,50,30,.95)}
+#cat{position:fixed;left:0;right:0;top:0;z-index:19;display:none;touch-action:none}
 #decks{position:absolute;left:0;top:0;width:100%;overflow:hidden}
 #decks .trk{position:absolute;left:0;top:0;height:100%;display:flex;transition:transform .34s cubic-bezier(.2,.8,.2,1)}
 #decks iframe{border:0;height:100%;flex:none;display:block;background:transparent}
@@ -352,7 +355,8 @@ html.lite .knob.st .krot{transition:none}
 
 </head>
 <body>
-<div id="desk"><div id="stage"><div id="chassis"></div></div></div>
+<div id="desk"><div id="glow"></div><div id="stage"><div id="chassis"></div></div></div>
+<div id="turn">↻ ROTATE TO PORTRAIT</div>
 <script>
 (function () {
 'use strict';
@@ -409,9 +413,17 @@ const view = { s: 1, rot: 0 };
 function toLocal(dx, dy) { return { x: dx / view.s, y: dy / view.s }; }
 function fit() {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const s = Math.min(Math.min(vw / (PW + 26), vh / (PH + 26)), 1.5);
+  const s = Math.min(Math.min(vw / (PW + 26), vh / (PH + 26)), 2);
   view.s = s;
   stage.style.transform = 'translate(' + (vw - PW * s) / 2 + 'px,' + (vh - PH * s) / 2 + 'px) scale(' + s + ')';
+  glowFit();
+}
+/* roomy screens (tablet / PC): the disc's own colours bleed softly into the background; phones in landscape get a rotate hint */
+function glowFit() {
+  const g = document.getElementById('glow'), t = document.getElementById('turn'); if (!g) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  g.style.opacity = vw > PW * view.s + 220 ? '.42' : '0';
+  if (t) t.style.display = (vh < 500 && vw > vh * 1.25) ? 'block' : 'none';
 }
 function mkKnob(o) {
   const d = o.d, pad = 18, size = d + pad * 2;
@@ -583,41 +595,51 @@ const MIX = HOST ? (window.__MIX = {
 function buildHost() {
   try { Object.assign(MIX.M, JSON.parse(localStorage.getItem('iridescent.mix')) || {}); } catch (e) { /* ignore */ }
   const M = MIX.M, saveM = () => { try { localStorage.setItem('iridescent.mix', JSON.stringify(M)); } catch (e) { /* ignore */ } };
-  PH = 214; stage.style.height = PH + 'px';
+  const WIDE = window.innerWidth / window.innerHeight > 1.25 && window.innerWidth >= 700 && window.innerHeight >= 500;
+  /* geometry: a bar under the deck on a phone, a vertical strip between two decks on a tablet or a desktop */
+  const G = WIDE ? {
+    w: 220, h: 1070, mx: [110, 44], ms: [110, 640, 50],
+    k: { A: { hi: [58, 150], lo: [58, 262], fl: [58, 374] }, B: { hi: [162, 150], lo: [162, 262], fl: [162, 374] } }, t: { A: [58, 98], B: [162, 98] },
+    cue: { A: { x: 8, y: 470, w: 96, h: 34 }, B: { x: 116, y: 470, w: 96, h: 34 } },
+    split: { x: 30, y: 740, w: 160, h: 34 }, auto: { x: 8, y: 840, w: 96, h: 34 }, play: { x: 116, y: 840, w: 96, h: 34 },
+    cap: [['CUE L  MASTER R', 110, 792], ['AUTO MIX', 56, 892], ['EXIT TO PLAYER', 164, 892]], xf: { XL: 35, XW: 150, XY: 990, la: [14, 990], lb: [206, 990] }
+  } : {
+    w: 500, h: 214, mx: [250, 20], ms: [250, 66, 44],
+    k: { A: { lo: [46, 66], hi: [106, 66], fl: [166, 66] }, B: { lo: [454, 66], hi: [394, 66], fl: [334, 66] } }, t: { A: [106, 20], B: [394, 20] },
+    cue: { A: { x: 20, y: 126, w: 64, h: 30 }, B: { x: 416, y: 126, w: 64, h: 30 } },
+    split: { x: 210, y: 126, w: 80, h: 30 }, auto: { x: 96, y: 126, w: 60, h: 30 }, play: { x: 344, y: 126, w: 60, h: 30 },
+    cap: [['CUE L  MASTER R', 250, 166], ['AUTO MIX', 126, 166], ['EXIT TO PLAYER', 374, 166]], xf: { XL: 70, XW: 360, XY: 194, la: [36, 194], lb: [464, 194] }
+  };
+  PH = G.h; stage.style.height = G.h + 'px'; stage.style.width = G.w + 'px';
   const deskEl = document.getElementById('desk'), decks = document.createElement('div'), trk = document.createElement('div'), frames = {};
   decks.id = 'decks'; trk.className = 'trk'; decks.appendChild(trk); deskEl.insertBefore(decks, stage);
   ['A', 'B'].forEach(id => { const f = document.createElement('iframe'); f.setAttribute('allow', 'autoplay; microphone; fullscreen'); f.srcdoc = SRC.replace('<script>', '<script>window.__DECK="' + id + '";'); trk.appendChild(f); frames[id] = f; });
   const rim = document.createElement('div'); rim.className = 'rim'; stage.insertBefore(rim, chassis);
   let sel = 'A'; const ap = () => MIX.apply();
-  /* channel strips: A on the left, B mirrored on the right */
-  const strip = (id, xs) => {
-    const m = M[id];
-    [['LOW', 'lo', xs[0]], ['HI', 'hi', xs[1]], ['FILTER', 'fl', xs[2]]].forEach(([n, key, x]) => {
-      mkKnob({ x, y: 66, d: 40, value: m[key], def: .5, onChange: v => { m[key] = v; saveM(); ap(); } });
-      lab(n, x, 106, { cls: 'sm' });
-    });
-    lab('CH ' + id, (xs[0] + xs[2]) / 2, 20, { cls: 'lg', c: '#e8321e', w: 700 });
+  [['LOW', 'lo'], ['HI', 'hi'], ['FILTER', 'fl']].forEach(([n, key]) => ['A', 'B'].forEach(id => {
+    const m = M[id], [x, y] = G.k[id][key];
+    mkKnob({ x, y, d: WIDE ? 44 : 40, value: m[key], def: .5, onChange: v => { m[key] = v; saveM(); ap(); } });
+    lab(n, x, y + (WIDE ? 42 : 40), { cls: 'sm' });
+  }));
+  ['A', 'B'].forEach(id => lab('CH ' + id, G.t[id][0], G.t[id][1], { cls: 'lg', c: '#e8321e', w: 700 }));
+  mkKnob({ x: G.ms[0], y: G.ms[1], d: G.ms[2], value: M.master, def: .8, onChange: v => { M.master = v; saveM(); ap(); } });
+  lab('MASTER', G.ms[0], G.ms[1] + (WIDE ? 44 : 40), { cls: 'sm' }); lab('MIXER', G.mx[0], G.mx[1], { cls: 'lg', c: '#e8321e', w: 700 });
+  const cueBtn = id => {
+    const c = G.cue[id], l = led(c.x + c.w / 2, c.y - 8, M[id].cue ? 'on' : '');
+    mkBtn({ x: c.x, y: c.y, w: c.w, h: c.h, cls: 'dark', text: 'CUE', up: (e, cc) => { if (cc) return; M[id].cue = M[id].cue ? 0 : 1; l.classList.toggle('on', !!M[id].cue); saveM(); ap(); } });
   };
-  strip('A', [46, 106, 166]); strip('B', [454, 394, 334]);
-  mkKnob({ x: 250, y: 66, d: 44, value: M.master, def: .8, onChange: v => { M.master = v; saveM(); ap(); } });
-  lab('MASTER', 250, 106, { cls: 'sm' }); lab('MIXER', 250, 20, { cls: 'lg', c: '#e8321e', w: 700 });
-  const cueBtn = (id, x) => {
-    const l = led(x + 32, 118, M[id].cue ? 'on' : '');
-    mkBtn({ x, y: 126, w: 64, h: 30, cls: 'dark', text: 'CUE', up: (e, c) => { if (c) return; M[id].cue = M[id].cue ? 0 : 1; l.classList.toggle('on', !!M[id].cue); saveM(); ap(); } });
-    return l;
-  };
-  cueBtn('A', 20); cueBtn('B', 416);
-  const splitLed = led(250, 118, M.split ? 'on' : '');
-  mkBtn({ x: 210, y: 126, w: 80, h: 30, cls: 'grey', text: 'SPLIT', up: (e, c) => { if (c) return; M.split = M.split ? 0 : 1; splitLed.classList.toggle('on', !!M.split); saveM(); ap(); } });
-  const autoLed = led(126, 118, M.auto ? 'on' : '');
-  mkBtn({ x: 96, y: 126, w: 60, h: 30, cls: 'grey', text: 'AUTO', up: (e, c) => { if (c) return; M.auto = M.auto ? 0 : 1; autoLed.classList.toggle('on', !!M.auto); saveM(); } });
-  mkBtn({ x: 344, y: 126, w: 60, h: 30, cls: 'grey', text: 'PLAY', up: (e, c) => { if (!c) setMode(false); } });
-  lab('CUE L  MASTER R', 250, 166, { cls: 'sm', c: '#6b7078' }); lab('AUTO MIX', 126, 166, { cls: 'sm', c: '#6b7078' }); lab('EXIT TO PLAYER', 374, 166, { cls: 'sm', c: '#6b7078' });
+  cueBtn('A'); cueBtn('B');
+  const sp = G.split, splitLed = led(sp.x + sp.w / 2, sp.y - 8, M.split ? 'on' : '');
+  mkBtn({ x: sp.x, y: sp.y, w: sp.w, h: sp.h, cls: 'grey', text: 'SPLIT', up: (e, c) => { if (c) return; M.split = M.split ? 0 : 1; splitLed.classList.toggle('on', !!M.split); saveM(); ap(); } });
+  const au = G.auto, autoLed = led(au.x + au.w / 2, au.y - 8, M.auto ? 'on' : '');
+  mkBtn({ x: au.x, y: au.y, w: au.w, h: au.h, cls: 'grey', text: 'AUTO', up: (e, c) => { if (c) return; M.auto = M.auto ? 0 : 1; autoLed.classList.toggle('on', !!M.auto); saveM(); } });
+  const pl = G.play; mkBtn({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, cls: 'grey', text: 'PLAY', up: (e, c) => { if (!c) setMode(false); } });
+  G.cap.forEach(([t, x, y]) => lab(t, x, y, { cls: 'sm', c: '#6b7078' }));
   /* crossfader */
-  const XL = 70, XW = 360, XY = 194;
+  const XL = G.xf.XL, XW = G.xf.XW, XY = G.xf.XY;
   el('hslot', chassis, 'left:' + (XL - 8) + 'px;top:' + (XY - 7) + 'px;width:' + (XW + 16) + 'px');
   for (let i = 0; i <= 10; i++) el('', chassis, 'position:absolute;width:1.3px;border-radius:1px;background:#4a4f58;height:' + (i % 5 ? 5 : 9) + 'px;left:' + (XL + XW * i / 10) + 'px;top:' + (XY - 21) + 'px');
-  lab('A', 36, XY, { cls: 'lg' }); lab('B', 464, XY, { cls: 'lg' });
+  lab('A', G.xf.la[0], G.xf.la[1], { cls: 'lg' }); lab('B', G.xf.lb[0], G.xf.lb[1], { cls: 'lg' });
   const xfd = el('hfader', chassis, 'left:' + (XL - 28) + 'px;top:' + (XY - 30) + 'px;width:' + (XW + 56) + 'px'), xt = el('htab', xfd, ''); xt.appendChild(document.createElement('i'));
   const xr = () => { xt.style.left = (28 + M.xf * XW - 28) + 'px'; };
   xr(); let xd = null, xlt = 0;
@@ -629,20 +651,36 @@ function buildHost() {
   const xe = e => { if (!xd || e.pointerId !== xd.id) return; const d0 = xd; xd = null; xfd.classList.remove('act'); saveM(); if (!d0.mv && e.type === 'pointerup') { const n = performance.now(); if (n - xlt < 320) { M.xf = .5; xr(); ap(); saveM(); } xlt = n; } };
   xfd.addEventListener('pointerup', xe); xfd.addEventListener('pointercancel', xe);
   /* layout: one deck at a time on a phone held upright, both side by side when the window is wide */
-  const hdl = document.createElement('div'); hdl.id = 'hdl'; document.body.appendChild(hdl);
-  const hb = {}; ['A', 'GR', 'B'].forEach(k => { const e = document.createElement('b'); e.innerHTML = k === 'GR' ? '&#9650; MIXER' : 'DECK ' + k + '<i></i>'; if (k === 'GR') e.className = 'gr'; hdl.appendChild(e); hb[k] = e; });
+  const edge = document.createElement('div'); edge.id = 'edge'; edge.innerHTML = '<i></i><i></i>'; document.body.appendChild(edge);
+  const cat = document.createElement('div'); cat.id = 'cat'; document.body.appendChild(cat);
+  const dots = edge.querySelectorAll('i');
   let open = false; stage.classList.add('host');
-  function setOpen(o) { open = o; hb.GR.innerHTML = (o ? '&#9660;' : '&#9650;') + ' MIXER'; hostFit(); }
-  function show(id) { sel = id; hb.A.classList.toggle('on', id === 'A'); hb.B.classList.toggle('on', id === 'B'); hostFit(); }
-  hb.A.addEventListener('pointerup', () => show('A')); hb.B.addEventListener('pointerup', () => show('B')); hb.GR.addEventListener('pointerup', () => setOpen(!open));
-  let hy = null; hdl.addEventListener('pointerdown', e => { hy = e.clientY; }); hdl.addEventListener('pointerup', e => { if (hy !== null) { const dy = e.clientY - hy; if (dy < -20) setOpen(true); else if (dy > 20) setOpen(false); } hy = null; });
-  setInterval(() => { ['A', 'B'].forEach(k => { let p = false; try { p = !!(MIX.decks[k] && MIX.decks[k].playing()); } catch (e) { /* ignore */ } hb[k].classList.toggle('pl', p); }); }, 300);
+  function setOpen(o) { open = o; cat.style.display = o && !WIDE ? 'block' : 'none'; hostFit(); }
+  function show(id) { sel = id; dots[0].classList.toggle('on', id === 'A'); dots[1].classList.toggle('on', id === 'B'); hostFit(); }
+  MIX.swipe = d => { if (d === 'A' || d === 'B') show(d); else if (d === 'up') setOpen(true); else if (d === 'down') setOpen(false); };
+  cat.addEventListener('pointerdown', () => setOpen(false));
+  let eg = null;
+  edge.addEventListener('pointerdown', e => { eg = { x: e.clientX, y: e.clientY }; try { edge.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ } });
+  edge.addEventListener('pointerup', e => { if (!eg) return; const dx = e.clientX - eg.x, dy = e.clientY - eg.y; eg = null; if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) setOpen(dy < 0); else if (Math.abs(dx) > 40) show(dx < 0 ? 'B' : 'A'); else setOpen(!open); });
+  setInterval(() => { ['A', 'B'].forEach((k, i) => { let p = false; try { p = !!(MIX.decks[k] && MIX.decks[k].playing()); } catch (e) { /* ignore */ } dots[i].classList.toggle('pl', p); }); }, 300);
   function hostFit() {
-    const vw = window.innerWidth, vh = window.innerHeight, HB = 30;
-    const ps = Math.min(vw / (PW + 26), 1.5, (vh * .34) / (PH + 12)); view.s = ps;
+    try { glowFit(); } catch (e) { /* ignore */ }
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if ((vw / vh > 1.25 && vw >= 700 && vh >= 500) !== WIDE) { location.reload(); return; }
+    if (WIDE) {
+      edge.style.display = 'none'; cat.style.display = 'none';
+      const bw = 526, bh = 1096, mw = G.w + 26, s = Math.min(vw / (2 * bw + mw), vh / bh, 2); view.s = s;
+      const x0 = (vw - (2 * bw + mw) * s) / 2, y0 = (vh - bh * s) / 2;
+      decks.style.height = '100%'; trk.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;transition:none';
+      frames.A.style.cssText = 'position:absolute;left:' + x0 + 'px;top:' + y0 + 'px;width:' + bw * s + 'px;height:' + bh * s + 'px';
+      frames.B.style.cssText = 'position:absolute;left:' + (x0 + (bw + mw) * s) + 'px;top:' + y0 + 'px;width:' + bw * s + 'px;height:' + bh * s + 'px';
+      stage.style.transform = 'translate(' + (x0 + (bw + 13) * s) + 'px,' + (y0 + 13 * s) + 'px) scale(' + s + ')';
+      return;
+    }
+    const ps = Math.min(vw / (G.w + 26), 1.7, (vh * .3) / (PH + 12)); view.s = ps;
     const ph = PH * ps + 10;
-    stage.style.transform = 'translate(' + (vw - PW * ps) / 2 + 'px,' + (open ? vh - HB - ph + 2 : vh + 30) + 'px) scale(' + ps + ')';
-    decks.style.height = (vh - HB) + 'px';
+    stage.style.transform = 'translate(' + (vw - G.w * ps) / 2 + 'px,' + (open ? vh - ph + 2 : vh + 30) + 'px) scale(' + ps + ')';
+    cat.style.bottom = ph + 'px'; decks.style.height = vh + 'px';
     frames.A.style.width = frames.B.style.width = vw + 'px'; trk.style.width = 2 * vw + 'px';
     trk.style.transform = 'translateX(' + (sel === 'A' ? 0 : -vw) + 'px)';
   }
@@ -650,8 +688,19 @@ function buildHost() {
   window.addEventListener('resize', hostFit); window.addEventListener('orientationchange', () => setTimeout(hostFit, 120));
   /* swipe the mixer panel sideways to change deck */
   let sw0 = null;
-  chassis.addEventListener('pointerdown', e => { if (e.target === chassis) sw0 = { x: e.clientX, id: e.pointerId }; });
-  chassis.addEventListener('pointerup', e => { if (sw0 && e.pointerId === sw0.id) { const dx = e.clientX - sw0.x; if (Math.abs(dx) > 50) show(dx < 0 ? 'B' : 'A'); } sw0 = null; });
+  chassis.addEventListener('pointerdown', e => { if (e.target === chassis) sw0 = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+  chassis.addEventListener('pointerup', e => { if (sw0 && e.pointerId === sw0.id) { const dx = e.clientX - sw0.x; const dy = e.clientY - sw0.y; if (dy > 50 && dy > Math.abs(dx)) setOpen(false); else if (Math.abs(dx) > 50) show(dx < 0 ? 'B' : 'A'); } sw0 = null; });
+  const KM = { q: ['A', 'play'], w: ['A', 'cue'], e: ['A', 'sync'], r: ['A', 'loop'], u: ['B', 'play'], i: ['B', 'cue'], o: ['B', 'sync'], p: ['B', 'loop'] };
+  MIX.key = (e, up) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || (e.target && /input|textarea/i.test(e.target.tagName))) return false;
+    const k = (e.key || '').toLowerCase(), m = KM[k];
+    if (m) { const d = MIX.decks[m[0]]; if (!d) return true; if (m[1] === 'cue') { if (up) d.act('cueUp'); else if (!e.repeat) d.act('cueDown'); } else if (!up && !e.repeat) d.act(m[1]); return true; }
+    if (up) return k === ',' || k === '.' || k === '\\';
+    if (k === ',' || k === '.') { M.xf = clamp(M.xf + (k === ',' ? -.06 : .06), 0, 1); if (Math.abs(M.xf - .5) < .03) M.xf = .5; xr(); ap(); saveM(); return true; }
+    if (k === '\\') { M.auto = M.auto ? 0 : 1; autoLed.classList.toggle('on', !!M.auto); saveM(); return true; }
+    return false;
+  };
+  window.addEventListener('keydown', e => { if (MIX.key(e, false)) e.preventDefault(); }); window.addEventListener('keyup', e => { if (MIX.key(e, true)) e.preventDefault(); });
   document.addEventListener('pointerdown', () => { if (MIX.ctx && MIX.ctx.state !== 'running') MIX.ctx.resume(); }, true);
   /* AUTO MIX: near the end of a disc the other deck takes the next one, tempo-synced, starts on the beat and the crossfader rides over */
   const D = id => MIX.decks[id], FADE = 8; let fading = false, prep = null;
@@ -769,8 +818,8 @@ function initAudio() {
   const vol = ctx.createGain(), lim = ctx.createDynamicsCompressor();
   lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .08;
   treb.connect(tape.i); tape.o.connect(drive.i); drive.o.connect(comp.i); comp.o.connect(vol); vol.connect(lim); lim.connect(MX ? MX.input(DK) : ctx.destination);
-  const src = ctx.createMediaElementSource(audio); src.connect(bus);
-  E = { bus, bass, treb, tape, drive, comp, g1, g2, lp, hg, pre, post, vol, src, line: null, stream: null };
+  const src = ctx.createMediaElementSource(audio), elg = ctx.createGain(); src.connect(elg); elg.connect(bus);
+  E = { bus, bass, treb, tape, drive, comp, g1, g2, lp, hg, pre, post, vol, src, elg, line: null, stream: null };
   applyFx();
   return E;
 }
@@ -868,10 +917,45 @@ function scrBegin(coast, r0) {
   initAudio(); if (ctx.state !== 'running') ctx.resume(); scrInit();
   SCR.buf = t.buf; SCR.rev = null; SCR.pos = audio.currentTime || 0; SCR.rate = r0 || 0; SCR.restart = false; SCR.search = false;
   SCR.wasPlaying = coast ? (r0 > 0) : !audio.paused; SCR.motor = SCR.wasPlaying ? baseRate() : 0; SCR.coast = !!coast; SCR.active = true;
+  if (SCR.hand) handAbort(); else if (E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); }
   audio.pause(); return true;
 }
 function scrEnd() { if (!SCR.active) return; SCR.coast = true; if (!SCR.search) SCR.motor = SCR.wasPlaying ? baseRate() : 0; }
+/* gapless hand-off: the buffer keeps playing while the <audio> element seeks and starts silently; when it is in step the two are crossfaded.
+   (iOS needs ~0.4 s to restart a media element after a seek - that used to be an audible hole after every scratch / play / pause) */
+let HLAT = .45;
+function handSeek() { const h = SCR.hand; h.target = SCR.pos + h.lat; try { audio.currentTime = h.target; } catch (e) { /* ignore */ } h.seekAt = performance.now(); h.prevT = -1; h.still = 0; if (audio.paused) rawPlay(); }
+function handStart() {
+  SCR.hand = { lat: HLAT, tries: 0, target: 0, seekAt: 0, prevT: -1, still: 0 };
+  const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(0, n); handSeek();
+}
+function handAbort() {
+  if (!SCR.hand) return; SCR.hand = null; const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); audio.pause();
+}
+function handDone(h) {
+  SCR.hand = null; HLAT = clamp(h.lat, .05, 1.2); const n = ctx.currentTime;
+  E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(E.elg.gain.value, n); E.elg.gain.linearRampToValueAtTime(1, n + .015);
+  const nd = SCR.node; SCR.node = null;
+  if (nd) { try { nd.g.gain.cancelScheduledValues(n); nd.g.gain.setValueAtTime(nd.g.gain.value, n); nd.g.gain.linearRampToValueAtTime(0, n + .015); nd.s.stop(n + .05); } catch (e) { /* ignore */ } }
+  SCR.active = false; SCR.search = false; SCR.ng.gain.setTargetAtTime(0, n, .02);
+}
+function handCheck() {
+  const h = SCR.hand; if (!h) return;
+  if (audio.seeking || audio.paused || audio.readyState < 3) return;
+  const t = audio.currentTime; if (performance.now() - h.seekAt < 40) return;
+  if (t === h.prevT) { if (++h.still > 40) { handAbort(); scrFinishHard(true); } return; }   // element never started: give up, old path
+  if (h.prevT < 0) { h.prevT = t; return; }                                                     // first sample after the seek: wait for it to move
+  const d = t - SCR.pos;
+  if (Math.abs(d) <= .035 || (h.tries >= 3 && Math.abs(d) < .25)) { handDone(h); return; }
+  if (h.tries >= 3) { handAbort(); scrFinishHard(true); return; }
+  h.tries++; h.lat = clamp(h.lat - d, .05, 1.5); handSeek();
+}
 function scrFinish(play) {
+  if (play && !SCR.hand && E && E.elg && SCR.buf && SCR.pos < SCR.buf.duration - 1.2) { handStart(); return; }
+  scrFinishHard(play);
+}
+function scrFinishHard(play) {
+  SCR.hand = null; if (E && E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); }
   scrStop(); SCR.active = false; SCR.search = false; SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02);
   try { audio.currentTime = SCR.pos; } catch (e) { /* ignore */ }
   if (play) rawPlay(); else ui.playState(false);
@@ -888,7 +972,8 @@ function scrTick(dt, vel) {
   else if (!nd || nd.dir !== dir || SCR.restart || (dir < 0 && SCR.rev && SCR.pos * sr < SCR.rev.w0 + sr * .15)) { SCR.restart = false; scrStart(dir); }
   else nd.s.playbackRate.setTargetAtTime(Math.abs(SCR.rate), ctx.currentTime, .008);
   SCR.ng.gain.setTargetAtTime(Math.min(.03, Math.abs(SCR.rate) * .014) * (dir ? 1 : 0), ctx.currentTime, .015);
-  if (vel === null && !SCR.search) {
+  if (SCR.hand) { if ((jog.on && !jog.bend) || SCR.search || !SCR.wasPlaying || SCR.motor <= 0) handAbort(); else handCheck(); }
+  if (vel === null && !SCR.search && !SCR.hand) {
     if (SCR.motor > 0 && (Math.abs(SCR.rate - SCR.motor) < .03 || SCR.pos >= dur - .06)) scrFinish(true);
     else if (SCR.motor === 0 && Math.abs(SCR.rate) < .04) scrFinish(false);
   }
@@ -967,6 +1052,7 @@ let coverTok = 0, firstCover = true;
 function setCover(t) {
   try {
     const tok = ++coverTok, bg = coverBg(t.key);
+    const gl = document.getElementById('glow'); if (gl) gl.style.background = bg;
     if (firstCover || !disc.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { firstCover = false; cdrot.style.background = bg; return; }
     // eject, swap the disc, drop the new one in
     const out = disc.animate([{ transform: 'translateY(0) scale(1)', opacity: 1 }, { transform: 'translateY(-26px) scale(.9)', opacity: 0 }], { duration: 170, easing: 'cubic-bezier(.5,0,.9,.4)', fill: 'forwards' });
@@ -1046,6 +1132,7 @@ let mixDone = false;
 try {
   if (window.parent !== window && window.parent.__MIX) window.parent.__MIX.decks[DK] = {
     bpm: () => effBpm(cur()) * baseRate(), playing: () => isPlaying(), pos: () => curPos(), dur: () => audio.duration || 0, has: () => !!cur(),
+    act: n => { if (n === 'play') togglePlay(); else if (n === 'cueDown') cueDown(); else if (n === 'cueUp') cueUp(); else if (n === 'sync') syncToggle(); else if (n === 'loop') loopToggle(); },
     fresh: () => !!cur() && !mixDone && !isPlaying() && curPos() < 1.5,
     peekNext: () => { const j = nextIdx(true); return (j >= 0 && j !== Q.idx) ? Q.list[j] : null; },
     take: item => { Q.list.push({ file: item.file, name: item.name, key: item.key, dur: item.dur || 0, peaks: null }); ui.libBuild(); loadTrack(Q.list.length - 1, false); },
@@ -1378,10 +1465,11 @@ mkBtn({ x: fx(3), y: FY, w: FW, h: FH, text: 'LOOP',
   down: () => { lpRoll = false; lpTo = setTimeout(() => { lpRoll = true; loopRollStart(); }, 300); },
   up: (e, c) => { clearTimeout(lpTo); if (lpRoll) loopRollEnd(); else if (!c) loopToggle(); } });
 const ledSync = led(fc(4), 872, S.sync ? 'on' : '');
+function syncToggle() { S.sync = S.sync ? 0 : 1; save(); ledSync.classList.toggle('on', !!S.sync); if (S.sync) { if (!MASTER && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); syncApply(false); } else ui.msg('SYNC OFF'); }
 let syLong = false, syTo = 0;
 mkBtn({ x: fx(4), y: FY, w: FW, h: FH, cls: 'dark', text: 'SYNC',
   down: () => { syLong = false; syTo = setTimeout(() => { syLong = true; S.q = S.q ? 0 : 1; save(); ui.msg('QUANTIZE ' + (S.q ? 'ON' : 'OFF')); }, 600); },
-  up: (e, c) => { clearTimeout(syTo); if (c || syLong) return; S.sync = S.sync ? 0 : 1; save(); ledSync.classList.toggle('on', !!S.sync); if (S.sync) { if (!MASTER && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); syncApply(false); } else ui.msg('SYNC OFF'); } });
+  up: (e, c) => { clearTimeout(syTo); if (c || syLong) return; syncToggle(); } });
 mkBtn({ x: fx(5), y: FY, w: FW, h: FH, cls: 'grey', text: 'MODE', up: (e, c) => { if (c) return; S.mode = (S.mode + 1) % 4; save(); ui.msg('MODE ' + MODES[S.mode]); } });
 const ledLock = led(fc(6), 872, S.lock ? 'on' : '');
 mkBtn({ x: fx(6), y: FY, w: FW, h: FH, text: 'LOCK', up: (e, c) => { if (c) return; S.lock = S.lock ? 0 : 1; save(); applyRate(); ledLock.classList.toggle('on', !!S.lock); ui.msg('PITCH LOCK ' + (S.lock ? 'ON' : 'OFF')); } });
@@ -1559,6 +1647,7 @@ disc.addEventListener('pointermove', e => {
 });
 const jogEnd = e => { if (e.pointerId === jog.id) { jog.on = false; if (jog.bend) jog.bend = false; else scrEnd(); } };
 disc.addEventListener('pointerup', jogEnd); disc.addEventListener('pointercancel', jogEnd);
+disc.addEventListener('wheel', e => { e.preventDefault(); if (!cur()) return; if (isPlaying()) nudge = clamp(nudge - e.deltaY / 700, .88, 1.12); else seekBy(e.deltaY / 160); }, { passive: false });
 
 /* ================= display drawing ================= */
 let helpOn = false, helpName = '', helpDesc = '', helpAt = 0;
@@ -1723,7 +1812,18 @@ if ('mediaSession' in navigator) {
   h('play', doPlay); h('pause', doPause); h('previoustrack', prev); h('nexttrack', next);
   h('seekbackward', () => seekBy(-10)); h('seekforward', () => seekBy(10)); h('seekto', d => seek(d.seekTime));
 }
+if (window.parent !== window) {
+  let sg = null; const inter = '.knob,.btn,.vfader,.cdisc,.hubbtn,.sw,.dmhit,#lib';
+  window.addEventListener('pointerdown', e => { sg = (e.target.closest && e.target.closest(inter)) ? null : { x: e.clientX, y: e.clientY, id: e.pointerId }; }, true);
+  window.addEventListener('pointerup', e => {
+    if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y; sg = null;
+    try { const m = window.parent.__MIX; if (!m || !m.swipe) return; if (Math.abs(dx) > 60 && Math.abs(dx) > 1.6 * Math.abs(dy)) m.swipe(dx < 0 ? 'B' : 'A'); else if (Math.abs(dy) > 70 && Math.abs(dy) > 1.6 * Math.abs(dx)) m.swipe(dy < 0 ? 'up' : 'down'); } catch (err) { /* ignore */ }
+  }, true);
+}
+const hostKey = (e, up) => { try { return window.parent !== window && window.parent.__MIX && window.parent.__MIX.key && window.parent.__MIX.key(e, up); } catch (err) { return false; } };
+window.addEventListener('keyup', e => { if (hostKey(e, true)) e.preventDefault(); });
 window.addEventListener('keydown', e => {
+  if (hostKey(e, false)) { e.preventDefault(); return; }
   if (e.target && /input|textarea/i.test(e.target.tagName)) return;
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); } else if (e.code === 'ArrowRight') seekBy(5); else if (e.code === 'ArrowLeft') seekBy(-5);
   else if (e.key === 'n') next(); else if (e.key === 'p') prev();

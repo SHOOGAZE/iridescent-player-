@@ -1,8 +1,8 @@
 # IRIDESCENT
 
-**An analog-digital CD player for the phone.** Load your own audio files, spin them on a jog disc, drop hot cues, loop, bend the speed, and warm everything up with tape, drive and compression. One `index.html`, no build step, no dependencies.
+**An analog-digital CD player for the phone, with a DJ console for tablet and desktop.** Load your own audio files, spin them on a jog disc, scratch, drop hot cues, loop, sync two decks and warm everything up with tape, drive and compression. One `index.html`, no build step, no dependencies.
 
-![IRIDESCENT](docs/screenshot.png)
+<img src="screens/screenshot.jpg" width="260" alt="IRIDESCENT">
 
 
 IRIDESCENT belongs to a small family of skeuomorphic, single-file instruments built around one look: frosted plastic over a visible PCB, a dot-matrix display, white ringed knobs and a single red accent.
@@ -19,32 +19,39 @@ IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB 
 
 ## Quick guide
 
-![Quick guide](docs/guide.png)
+![Quick guide](screens/guide.jpg)
 
-Russian version: [docs/guide-ru.png](docs/guide-ru.png).
+Russian version: [screens/guide-ru.jpg](screens/guide-ru.jpg). In the app, the HELP key does the same on the display itself:
 
-DJ mode (hold JOG): ![DJ mixer guide](docs/guide-mixer.png)
+![Help mode](screens/help.jpg)
 
-Russian: [docs/guide-mixer-ru.png](docs/guide-mixer-ru.png). In the app, the HELP key does the same on the display itself.
+DJ mode (hold JOG): [mixer guide](screens/guide-mixer.jpg), Russian: [screens/guide-mixer-ru.jpg](screens/guide-mixer-ru.jpg).
 
-![Help mode](docs/help.png)
+![Power-on, splash, scratch, library](screens/states.jpg)
 
-| Power-on | Splash | Scratch | Library |
-| --- | --- | --- | --- |
-| ![Power-on](docs/power.png) | ![Splash](docs/splash.png) | ![Scratch](docs/scratch.png) | ![Library](docs/library.png) |
+Where the screen is roomy the player stays one player: the disc's own colours bleed softly into the background.
+
+![Desktop, PLAY](screens/desktop-play.jpg)
+
+DJ mode on a tablet or a desktop is one console: two decks with a vertical mixer strip between them.
+
+![Desktop, DJ](screens/desktop-dj.jpg)
+
+Keyboard (DJ mode): `Q W E R` deck A play / cue / sync / loop, `U I O P` the same for deck B, `,` and `.` move the crossfader, `\` toggles AUTO MIX. The mouse wheel over the disc scrubs or bends.
 
 ## Features
 
-- **PLAY / DJ** – PLAY (default) is the single player. Hold JOG to switch to DJ: two decks A/B (tap the bar at the bottom or swipe), a mixer drawer pulled up from the bar (crossfader, LOW / HI, morphing FILTER, MASTER, CUE pre-listen with SPLIT) and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. PLAY in the drawer goes back. SYNC follows the other deck's tempo.
+- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone it is a light DJ mode, in portrait only: two decks A/B (swipe left/right to switch; two dots at the bottom show the active deck, red ring = playing), a mixer panel (swipe up to open, swipe down or tap outside to close; crossfader, LOW / HI, morphing FILTER, MASTER, CUE pre-listen with SPLIT) and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. PLAY in the mixer goes back. SYNC follows the other deck's tempo. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
 - **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG modes VINYL / CDJ (rim bends the speed).
 - **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display, the red LED pulses on the beat. **SYNC** locks the deck to the master tempo via varispeed (8/16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
-- **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on. The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
+- **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on without a gap: the scratch engine keeps playing while the media element restarts silently (iOS needs ~0.4 s after a seek), then the two are crossfaded. The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
 - **8 hot cues** per track: tap to set or jump, hold to clear. Stored per file.
 - **A-B loop**, **MAIN CUE**, **PREV / REW / PLAY / FF / NEXT**, play modes.
 - **Weighted knobs**: values glide on a damped spring, a quick flick keeps turning for a moment like a DJ-deck encoder, double tap glides back to default, and the audio parameters morph instead of jumping.
 - **Varispeed** fader, range 8 or 16 percent, with **LOCK** to keep pitch.
 - **LOOM FX**: TAPE (wow, flutter, hiss, saturation), DRIVE (tanh waveshaper, 2x oversampling), COMP, plus BASS and TREBLE.
 - **LINE IN** from the device input, with echo cancellation and noise suppression off.
+- **Phone in landscape**: no separate layout by design; the player keeps its portrait panel and shows a small rotate hint. The installed app (home-screen icon) is locked to portrait.
 - **Waveform** on the display and a 72-LED progress ring.
 - **Resume**: remembers the position of each file; load it again and it picks up where you left it.
 - **Disc cover**: every disc gets its own iridescent colors, derived from the file.
@@ -56,19 +63,20 @@ Russian: [docs/guide-mixer-ru.png](docs/guide-mixer-ru.png). In the app, the HEL
 
 ## Use
 
-Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and others the browser can decode). On iPhone, add it to the home screen for full-screen mode.
+Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and others the browser can decode). On iPhone, add it to the home screen: it opens full-screen as an app (`manifest.webmanifest`) and stays in portrait.
 
-For offline use, host the folder (for example on GitHub Pages) so `sw.js` can register. Opened as a plain file it still works, without the offline cache.
+For offline use and installation, host the folder (for example on GitHub Pages) so `manifest.webmanifest` and `sw.js` are served. Opened as a plain file it still works, without the offline cache.
 
 ## Icon
 
-The home-screen icon is a simple iridescent disc with a white hub and a red accent square on a frosted gradient. It is drawn at runtime by the page; PNG exports are in `icons/` (512, 180, 32 px).
+The home-screen icon is a simple iridescent disc with a white hub and a red accent square on a frosted gradient. It is drawn at runtime by the page; PNG exports are in `icons/` (512, 180, 32 px), and the manifest uses them.
 
 ## Notes
 
 - Files stay on your device; nothing is uploaded.
 - Waveform peaks are computed for files up to 110 MB.
-- Tested in headless Chromium. Behaviour on iOS Safari (pitch lock, lock screen, silent switch) should be confirmed on a real device.
+- Layout: `index.html`, `manifest.webmanifest`, `sw.js`, `icons/`, `screens/` (all pictures used in this README).
+- Tested in headless Chromium. Behaviour on iOS Safari (pitch lock, lock screen, silent switch, two decks sharing one audio context in DJ mode) should be confirmed on a real device.
 
 ## Roadmap
 
