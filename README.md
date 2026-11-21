@@ -14,7 +14,7 @@ IRIDESCENT belongs to a small family of skeuomorphic, single-file instruments bu
 | Project | What it is |
 | --- | --- |
 | [**ZIIION**](https://github.com/SHOOGAZE/ziiion-synth) | The pocket bass-line machine. It defines the visual language: panel, knobs, switches, dot-matrix display. |
-| **LOOM** | A set of guitar-effect pedals as a PWA. It defines the sound: tape, drive and compression stages. |
+| [**LOOM**](https://shoogaze.github.io/loom-pedalboard/) | A set of guitar-effect pedals as a PWA. It defines the sound: tape, drive and compression stages. |
 | **IRIDESCENT** | The CD player. ZIIION's face, LOOM's effects, plus transport built for a disc. |
 
 IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB traces, 5x7 dot-matrix font) and carries simplified versions of the LOOM TAPE, DRIVE and COMP stages. Sibling of the cassette player TAPE-4.
@@ -51,7 +51,7 @@ Keyboard (DJ mode): `Q W E R` deck A play / cue / sync / loop, `U I O P` the sam
 - **Disc cover**: every disc gets its own iridescent colors, derived from the file.
 - **Disc change animation**: the old disc lifts out, the new one drops onto the spindle.
 - **Library**: a shelf of big iridescent discs, each with its title and length; the playing disc has a red ring. Tap a disc to load it, tap the cross to remove it. New discs drop in one by one.
-- **HELP mode**: press HELP, then tap any control; the dot-matrix display names it and scrolls what it does. Nothing is triggered while help is on.
+- **HELP mode**: press HELP, then tap any control; the dot-matrix display names it and scrolls what it does. Nothing is triggered while help is on. Hints come in English and Russian (the display has a Cyrillic dot-matrix font): hold HELP to switch; the language follows the browser by default.
 - Media Session controls on the lock screen, Wake Lock, silent-switch workaround on iOS.
 - Built-in demo disc (three synthesized tracks), so it plays with nothing loaded.
 

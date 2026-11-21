@@ -360,8 +360,8 @@ html.lite .knob.st .krot{transition:none}
 <script>
 (function () {
 'use strict';
-/* gapless hand-off after scratch/play is experimental and OFF by default (open index.html#gapless, or set localStorage iridescent.gapless = 1, to try it) */
-const GAPLESS = (() => { try { return location.hash.indexOf('gapless') >= 0 || localStorage.getItem('iridescent.gapless') === '1'; } catch (e) { return false; } })();
+/* gapless hand-off after scratch/play/pause: ON (open index.html#nogapless, or set localStorage iridescent.gapless = 0, to get the old path back) */
+const GAPLESS = (() => { try { return location.hash.indexOf('nogapless') < 0 && localStorage.getItem('iridescent.gapless') !== '0'; } catch (e) { return true; } })();
 const DJ = (() => { try { if (location.hash === '#mix') return true; if (location.hash === '#play') return false; return localStorage.getItem('iridescent.dj') === '1'; } catch (e) { return false; } })();
 const DK = (window.__DECK || new URLSearchParams(location.search).get('deck') || (DJ ? '' : 'A')).toUpperCase().replace(/[^AB]/g, '');
 const setMode = dj => { try { localStorage.setItem('iridescent.dj', dj ? '1' : '0'); history.replaceState(null, '', location.pathname + location.search + (dj ? '#mix' : '#play')); } catch (e) { /* ignore */ } setTimeout(() => location.reload(), 350); };
@@ -767,8 +767,8 @@ function clean(str) {
   let o = '';
   for (const ch of String(str).normalize('NFD').replace(/[̀-ͯ]/g, '')) {
     const l = ch.toLowerCase();
-    if (CYR[l] != null) o += CYR[l];
-    else if (G && G[ch.toUpperCase()]) o += ch.toUpperCase();
+    if (G && G[ch.toUpperCase()]) o += ch.toUpperCase();
+    else if (CYR[l] != null) o += CYR[l];
     else o += ' ';
   }
   return o.replace(/\s+/g, ' ').trim();
@@ -854,14 +854,18 @@ function lineOff() { if (E && E.line) { try { E.line.disconnect(); } catch (e) {
 let wake = null;
 async function wakeOn() { try { if (navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { /* ignore */ } }
 function wakeOff() { try { if (wake) { wake.release(); wake = null; } } catch (e) { /* ignore */ } }
-function applyRate() {
-  audio.playbackRate = clamp(baseRate() * nudge, .25, 4);
+let rateCur = 1, ppCur = null;
+function applyRate(snap) {   // the element's speed follows the target in small steps: a fader pixel never jerks the stretcher, and the pitch-lock flag is only written when it changes
+  const t = clamp(baseRate() * nudge, .25, 4);
+  if (snap === true || Math.abs(t - rateCur) > .06) rateCur = t; else rateCur += (t - rateCur) * .3;
+  if (Math.abs(t - rateCur) < .0004) rateCur = t;
+  if (Math.abs(audio.playbackRate - rateCur) > .00015) audio.playbackRate = rateCur;
   const pp = !!S.lock;
-  audio.preservesPitch = pp; audio.webkitPreservesPitch = pp; audio.mozPreservesPitch = pp;
+  if (pp !== ppCur) { ppCur = pp; audio.preservesPitch = pp; audio.webkitPreservesPitch = pp; audio.mozPreservesPitch = pp; }
 }
 const scrOK = () => S.scr && cur() && cur().buf && S.src !== 1;
 const isPlaying = () => (SCR.active ? SCR.wasPlaying : !audio.paused);
-function rawPlay() { applyRate(); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
+function rawPlay() { applyRate(true); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
 function doPlay() {
   initAudio(); if (ctx.state !== 'running') ctx.resume();
   if (S.src === 1) { ui.msg('LINE IN'); return; }
@@ -958,6 +962,7 @@ function handCheck() {
   h.tries++; h.lat = clamp(h.lat - d, .05, 1.5); handSeek();
 }
 function scrFinish(play) {
+  if (!SCR.active) return;
   if (GAPLESS && play && !SCR.hand && E && E.elg && SCR.buf && SCR.pos < SCR.buf.duration - 1.2) { handStart(); return; }
   scrFinishHard(play);
 }
@@ -979,7 +984,7 @@ function scrTick(dt, vel) {
   else if (!nd || nd.dir !== dir || SCR.restart || (dir < 0 && SCR.rev && SCR.pos * sr < SCR.rev.w0 + sr * .15)) { SCR.restart = false; scrStart(dir); }
   else nd.s.playbackRate.setTargetAtTime(Math.abs(SCR.rate), ctx.currentTime, .008);
   SCR.ng.gain.setTargetAtTime(Math.min(.03, Math.abs(SCR.rate) * .014) * (dir ? 1 : 0), ctx.currentTime, .015);
-  if (SCR.hand) { if ((jog.on && !jog.bend) || SCR.search || !SCR.wasPlaying || SCR.motor <= 0) handAbort(); else handCheck(); }
+  if (SCR.hand) { if ((jog.on && !jog.bend) || SCR.search || !SCR.wasPlaying || SCR.motor <= 0) handAbort(); else handCheck(); if (!SCR.active) return; }
   if (vel === null && !SCR.search && !SCR.hand) {
     if (SCR.motor > 0 && (Math.abs(SCR.rate - SCR.motor) < .03 || SCR.pos >= dur - .06)) scrFinish(true);
     else if (SCR.motor === 0 && Math.abs(SCR.rate) < .04) scrFinish(false);
@@ -1023,7 +1028,7 @@ function loadTrack(i, play) {
   if (!S.sync && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate();
   mixDone = false; Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) x.buf = null; });
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
-  const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; audio.load();
+  const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; ppCur = null; audio.load();
   cues = loadCues(t.key); loop = { a: null, b: null, on: false, auto: false }; mainCue = 0; slip = null;
   applyRate(); setCover(t); resumePos(t); if (S.sync && t.bpm) syncApply(true);
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
@@ -1340,6 +1345,27 @@ const bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv
     S: '01111 10000 10000 01110 00001 00001 11110', T: '11111 00100 00100 00100 00100 00100 00100', U: '10001 10001 10001 10001 10001 10001 01110',
     V: '10001 10001 10001 10001 10001 01010 00100', W: '10001 10001 10001 10101 10101 10101 01010', X: '10001 10001 01010 00100 01010 10001 10001',
     Y: '10001 10001 01010 00100 00100 00100 00100', Z: '11111 00001 00010 00100 01000 10000 11111',
+    'Б': '11111 10000 10000 11110 10001 10001 11110',
+    'Г': '11111 10000 10000 10000 10000 10000 10000',
+    'Д': '01111 01001 01001 01001 01001 11111 10001',
+    'Ж': '10101 10101 10101 01110 10101 10101 10101',
+    'З': '01110 10001 00001 00110 00001 10001 01110',
+    'И': '10001 10001 10011 10101 11001 10001 10001',
+    'Й': '01010 10001 10011 10101 11001 10001 10001',
+    'Л': '00111 01001 01001 01001 01001 01001 10001',
+    'П': '11111 10001 10001 10001 10001 10001 10001',
+    'У': '10001 10001 10001 01111 00001 10001 01110',
+    'Ф': '00100 01110 10101 10101 10101 01110 00100',
+    'Ц': '10010 10010 10010 10010 10010 11111 00001',
+    'Ч': '10001 10001 10001 01111 00001 00001 00001',
+    'Ш': '10101 10101 10101 10101 10101 10101 11111',
+    'Щ': '10101 10101 10101 10101 10101 11111 00001',
+    'Ъ': '11000 01000 01000 01110 01001 01001 01110',
+    'Ы': '10001 10001 10001 11001 10101 10101 11001',
+    'Ь': '10000 10000 10000 11110 10001 10001 11110',
+    'Э': '01110 10001 00001 00111 00001 10001 01110',
+    'Ю': '10010 10101 10101 11101 10101 10101 10010',
+    'Я': '01111 10001 10001 01111 00101 01001 10001',
     '.': '00000 00000 00000 00000 00000 01100 01100', ':': '00000 01100 01100 00000 01100 01100 00000', '-': '00000 00000 00000 11111 00000 00000 00000',
     '+': '00000 00100 00100 11111 00100 00100 00000', '#': '01010 01010 11111 01010 11111 01010 01010', '/': '00001 00010 00010 00100 01000 01000 10000',
     '%': '11001 11010 00010 00100 01000 01011 10011', '^': '00100 01010 10001 00000 00000 00000 00000', '~': '00000 00000 01000 10101 00010 00000 00000',
@@ -1349,6 +1375,7 @@ const bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv
     '?': '01110 10001 00001 00010 00100 00000 00100', "'": '00100 00100 01000 00000 00000 00000 00000', '|': '00100 00100 00100 00100 00100 00100 00100'
   };
 G = {}; Object.keys(F).forEach(k => { G[k] = F[k].split(' ').map(r => r.split('').map(c => c === '1')); });
+  Object.entries({'А': 'A', 'В': 'B', 'Е': 'E', 'Ё': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X'}).forEach(([k, v]) => { G[k] = G[v]; });   // Cyrillic look-alikes share the Latin glyphs
   function dot(x, y, a) { // a = brightness 0..1
     if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
     const cx = (x + .5) * PITCH * K, cy = (y + .5) * PITCH * K;
@@ -1503,7 +1530,10 @@ chassis = _c1;
 
 /* ================= HELP mode: tap a control, the display explains it ================= */
 const ledHelp = led(50, 42, '');
-mkBtn({ x: 22, y: 52, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help', up: (e, c) => { if (c) return; helpOn = !helpOn; ledHelp.classList.toggle('on', helpOn); helpName = helpOn ? 'HELP MODE' : ''; helpDesc = helpOn ? 'TAP ANY CONTROL TO SEE WHAT IT DOES  TAP HELP AGAIN TO EXIT' : ''; helpAt = performance.now(); } });
+let hlTo = 0, hlLong = false;
+mkBtn({ x: 22, y: 52, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help',
+  down: () => { hlLong = false; clearTimeout(hlTo); hlTo = setTimeout(() => { hlLong = true; helpLang = helpLang === 'ru' ? 'en' : 'ru'; try { localStorage.setItem('iridescent.lang', helpLang); } catch (e) { /* ignore */ } if (helpOn) { const hi = helpIntro(); helpName = clean(hi[0]); helpDesc = clean(hi[1]); helpAt = performance.now(); } else ui.msg(helpLang === 'ru' ? 'РУССКИЙ' : 'ENGLISH'); }, 700); },
+  up: (e, c) => { clearTimeout(hlTo); if (c || hlLong) return; helpOn = !helpOn; ledHelp.classList.toggle('on', helpOn); const hi = helpIntro(); helpName = helpOn ? clean(hi[0]) : ''; helpDesc = helpOn ? clean(hi[1]) : ''; helpAt = performance.now(); } });
 if (S.jm === undefined) S.jm = S.scr ? 0 : 0;
 S.scr = S.jm === 2 ? 0 : 1;
 const JMN = ['VINYL', 'CDJ', 'NO SCRATCH']; let jgLong = false, jgTo = 0;
@@ -1538,6 +1568,39 @@ const HELP = {
   'kn:TAPE': ['TAPE', 'HOW MUCH TAPE WOBBLE AND HISS  NEEDS THE TAPE SWITCH ON']
 };
 for (let i = 1; i <= 8; i++) HELP['pad' + i] = ['HOT CUE ' + i, 'TAP TO SET  TAP AGAIN TO JUMP HERE  HOLD TO CLEAR'];
+const HELP_RU = {
+  SOURCE: ['ИСТОЧНИК', 'FILE ИГРАЕТ ТВОИ ФАЙЛЫ  LINE СЛУШАЕТ ВХОД  ЛУЧШЕ В НАУШНИКАХ'],
+  RANGE: ['ДИАПАЗОН', 'ДИАПАЗОН ВАРИСПИДА  8 ИЛИ 16 ПРОЦЕНТОВ'],
+  'sw:TAPE': ['ЛЕНТА', 'ВКЛЮЧАЕТ ЛЕНТУ  ДЕТОНАЦИЯ  ФЛАТТЕР  ШУМ  МЯГКАЯ НАСЫЩЕННОСТЬ'],
+  'sw:DRIVE': ['ДРАЙВ', 'ВКЛЮЧАЕТ ИЛИ ВЫКЛЮЧАЕТ ПЕРЕГРУЗ'],
+  'sw:COMP': ['КОМПРЕССОР', 'ВКЛЮЧАЕТ КОМПРЕССОР  ВЫРАВНИВАЕТ ГРОМКОСТЬ'],
+  DISPLAY: ['ДИСПЛЕЙ', 'КАСАНИЕ ВЕРХА МЕНЯЕТ ПРОШЕДШЕЕ И ОСТАВШЕЕСЯ ВРЕМЯ  ТЯНИ ВОЛНУ ДЛЯ ПЕРЕМОТКИ'],
+  VOL: ['ГРОМКОСТЬ', 'УРОВЕНЬ ВЫХОДА  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
+  VARI: ['ВАРИСПИД', 'МЕДЛЕННЕЕ ИЛИ БЫСТРЕЕ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ В НОЛЬ  LOCK СОХРАНЯЕТ ТОНАЛЬНОСТЬ'],
+  JOG: ['ДЖОГ', 'КАСАНИЕ ДЕРЖИТ ДИСК  ВОДИ В ОБЕ СТОРОНЫ ДЛЯ СКРЕТЧА  ОТПУСТИ И ИГРА ПРОДОЛЖИТСЯ  КОЛЬЦО ПОКАЗЫВАЕТ ПРОГРЕСС'],
+  SCR: ['РЕЖИМ ДЖОГА', 'VINYL  СКРЕТЧИТСЯ ВЕСЬ ДИСК  CDJ  СКРЕТЧ ВЕРХОМ  ОБОД МЕНЯЕТ СКОРОСТЬ  УДЕРЖИВАЙ  РЕЖИМ DJ С ДВУМЯ ДЕКАМИ'],
+  PLAY: ['ПУСК / ПАУЗА', 'ЗАПУСКАЕТ И ОСТАНАВЛИВАЕТ ДИСК'],
+  PREV: ['НАЗАД', 'НАЧИНАЕТ ДИСК СНАЧАЛА  НАЖМИ ЕЩЁ РАЗ У НАЧАЛА ДЛЯ ПРЕДЫДУЩЕГО'],
+  REW: ['ПЕРЕМОТКА', 'УДЕРЖИВАЙ ДЛЯ ПОИСКА НАЗАД'],
+  FF: ['ВПЕРЁД', 'УДЕРЖИВАЙ ДЛЯ ПОИСКА ВПЕРЁД'],
+  NEXT: ['ДАЛЕЕ', 'ЗАГРУЖАЕТ СЛЕДУЮЩИЙ ДИСК'],
+  CUE: ['ГЛАВНЫЙ КЬЮ', 'НА ПАУЗЕ  СТАВИТ ТОЧКУ СТАРТА  УДЕРЖИВАЙ НА ТОЧКЕ ДЛЯ ИГРЫ  ОТПУСТИ И ВОЗВРАТ  ПРИ ИГРЕ  ПРЫЖОК НАЗАД'],
+  A: ['НАЧАЛО ЛУПА', 'СТАВИТ НАЧАЛО ЛУПА  УДЕРЖИВАЙ ДЛЯ СБРОСА  В АВТОЛУПЕ  СОКРАЩАЕТ ВДВОЕ'],
+  B: ['КОНЕЦ ЛУПА', 'СТАВИТ КОНЕЦ ЛУПА И ЗАПУСКАЕТ ЕГО  В АВТОЛУПЕ  УДВАИВАЕТ'],
+  SYNC: ['СИНХРОН ТЕМПА', 'ТАП ПОДСТРАИВАЕТ ТЕМП ПОД МАСТЕР BPM  УДЕРЖИВАЙ ДЛЯ КВАНТИЗАЦИИ  ТАП ПО BPM НА ДИСПЛЕЕ УБИРАЕТ ПОЛОВИННЫЙ ИЛИ ДВОЙНОЙ ТЕМП'],
+  LOOP: ['ЛУП', 'ТАП  АВТОЛУП НА ДОЛЮ ОТ 1/4 ДО 4 ТАКТОВ  УДЕРЖИВАЙ  ЛУП РОЛЛ  ТРЕК ИДЁТ ПОД НИМ И ВОЗВРАЩАЕТСЯ ПРИ ОТПУСКАНИИ'],
+  MODE: ['РЕЖИМ ИГРЫ', 'ОБЫЧНЫЙ  ПОВТОР ОДНОГО  ПОВТОР ВСЕХ  СЛУЧАЙНО'],
+  LOCK: ['ФИКС ТОНА', 'СОХРАНЯЕТ ТОНАЛЬНОСТЬ ПРИ СМЕНЕ СКОРОСТИ'],
+  LIB: ['БИБЛИОТЕКА', 'ОТКРЫВАЕТ ПОЛКУ ДИСКОВ  ДОБАВЬ ФАЙЛЫ ИЛИ ЗАГРУЗИ ДЕМО-ДИСК'],
+  'kn:BASS': ['БАС', 'НИЗКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
+  'kn:TREBLE': ['ВЧ', 'ВЫСОКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
+  'kn:DRIVE': ['ДРАЙВ', 'СИЛА ПЕРЕГРУЗА  НУЖЕН ВКЛЮЧЁННЫЙ DRIVE'],
+  'kn:TAPE': ['ЛЕНТА', 'СКОЛЬКО ЛЕНТОЧНОЙ ДЕТОНАЦИИ И ШУМА  НУЖЕН ВКЛЮЧЁННЫЙ TAPE']
+};
+for (let i = 1; i <= 8; i++) HELP_RU['pad' + i] = ['ХОТ-КЬЮ ' + i, 'ТАП СТАВИТ  ТАП ЕЩЁ РАЗ ПРЫГАЕТ СЮДА  УДЕРЖИВАЙ ДЛЯ СБРОСА'];
+let helpLang = 'en'; try { helpLang = localStorage.getItem('iridescent.lang') || ((navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en'); } catch (e) { /* ignore */ }
+const helpIntro = () => helpLang === 'ru' ? ['РЕЖИМ ПОМОЩИ', 'КОСНИСЬ ЛЮБОГО ЭЛЕМЕНТА И УЗНАЙ ЧТО ОН ДЕЛАЕТ  ЕЩЁ РАЗ HELP  ВЫХОД  УДЕРЖИВАЙ HELP  ENGLISH'] : ['HELP MODE', 'TAP ANY CONTROL TO SEE WHAT IT DOES  TAP HELP AGAIN TO EXIT  HOLD HELP FOR РУССКИЙ'];
+const helpTxt = k => (helpLang === 'ru' && HELP_RU[k]) || HELP[k];
 function helpKey(t) {
   let n;
   if ((n = t.closest('.btn'))) {
@@ -1556,7 +1619,7 @@ chassis.addEventListener('pointerdown', e => {
   if (!helpOn || e.target.closest('#lib,#power')) return;
   const k = helpKey(e.target); if (!k || !HELP[k]) return;
   e.preventDefault(); e.stopPropagation();
-  helpName = clean(HELP[k][0]); helpDesc = clean(HELP[k][1]); helpAt = performance.now();
+  const ht = helpTxt(k); helpName = clean(ht[0]); helpDesc = clean(ht[1]); helpAt = performance.now();
 }, true);
 
 /* ================= board: PCB under frosted plastic, rim, haze ================= */
@@ -1832,7 +1895,7 @@ function tick(now) {
   else if (jog.on && playing && !SCR.active) { if (now - jog.t0 > 70) jog.vel *= .8; const tg = 1 + clamp(jog.vel / (198 * baseRate()) - 1, -1, 1) * .12; nudge += (tg - nudge) * .3; }
   else { nudge += (1 - nudge) * .3; if (Math.abs(nudge - 1) < .002) nudge = 1; }
   const want = clamp(baseRate() * nudge, .25, 4);
-  if (Math.abs(audio.playbackRate - want) > .0005) applyRate();
+  if (Math.abs(rateCur - want) > .0003) applyRate();
   { const tt = cur(), eb = effBpm(tt);
     if (eb && playing) { const ph = (((audio.currentTime - tt.off) / beatLen(tt)) % 1 + 1) % 1; beatSq.style.opacity = (.3 + .7 * Math.exp(-ph * 5)).toFixed(2); beatSq.style.boxShadow = '0 0 ' + (3 + 9 * Math.exp(-ph * 5)).toFixed(1) + 'px rgba(203,74,54,.7)'; }
     else if (beatSq.style.opacity) { beatSq.style.opacity = ''; beatSq.style.boxShadow = ''; } }
@@ -1862,7 +1925,7 @@ if ('mediaSession' in navigator) {
       cap: [['DECK A', 132, 344], ['TO PLAYER', 250, 344], ['DECK B', 368, 344]], XL: 70, XW: 360, XY: 376
     };
     const mixW = document.createElement('div');
-    mixW.style.cssText = 'position:absolute;left:0;top:652px;width:500px;height:0;will-change:transform;visibility:hidden;transform:translate3d(1000px,0,0)';
+    mixW.style.cssText = 'position:absolute;left:0;top:652px;width:500px;height:0;will-change:transform;transform:translate3d(1000px,0,0)';
     const pages = [PGS[0], PGS[1]]; if (hasMix) { chassis.appendChild(mixW); pages.push(mixW); }
     const dotsW = el('pgd', chassis, ''); dotsW.innerHTML = hasMix ? '<i></i><i></i><i></i>' : '<i></i><i></i>';
     const pdots = [...dotsW.children]; pdots.forEach((d, i) => d.addEventListener('pointerup', () => window.__mix.set(i)));
@@ -1907,20 +1970,22 @@ if ('mediaSession' in navigator) {
       if (!ui2) return; const M = P.M; ui2.xr(); ui2.L.auto.classList.toggle('on', !!M.auto); ui2.L.split.classList.toggle('on', !!M.split);
       ['A', 'B'].forEach(k => { let p = false; try { p = !!(P.decks[k] && P.decks[k].playing()); } catch (e) { /* ignore */ } ui2.L.pl[k].classList.toggle('on', p); });
     };
-    const fin = () => { pages.forEach((n, i) => { n.style.visibility = Math.abs(i - mp) < 1 ? 'visible' : 'hidden'; }); if (mp <= 1) { clearInterval(rT); rT = 0; } };
+    const fin = () => { if (mp <= 1) { clearInterval(rT); rT = 0; } };
+    let lastR = -1;
     const setP = (p, anim) => {
       mp = p; if (hasMix && p > 1 && built !== P.ver) buildPage();
       const t = anim ? 'transform .24s cubic-bezier(.2,.8,.2,1)' : 'none';
-      pages.forEach((n, i) => { n.style.transition = t; n.style.transform = i === Math.round(p) || Math.abs(i - p) < 1 || anim ? 'translate3d(' + ((i - p) * 500) + 'px,0,0)' : 'translate3d(' + (i - p > 0 ? 1000 : -1000) + 'px,0,0)'; if (anim || Math.abs(i - p) < 1) n.style.visibility = 'visible'; });
-      pdots.forEach((d, i) => d.classList.toggle('on', i === Math.round(p)));
+      pages.forEach((n, i) => { n.style.transition = t; n.style.transform = 'translate3d(' + (Math.abs(i - p) < 1.001 || anim ? (i - p) * 500 : (i - p > 0 ? 1000 : -1000)) + 'px,0,0)'; });
+      const r = Math.round(p); if (r !== lastR) { lastR = r; pdots.forEach((d, i) => d.classList.toggle('on', i === r)); }
       clearTimeout(vT); if (hasMix && p > 1 && !rT) { live(); rT = setInterval(live, 120); }
       if (anim) vT = setTimeout(fin, 270); else fin();
     };
+    if (hasMix) { setTimeout(() => { if (built !== P.ver && mp <= 1) buildPage(); }, 350); setInterval(() => { if (built !== P.ver && mp <= 1 && !sg) buildPage(); }, 1500); }
     window.__mix = { set(n, instant) { n = n === true ? 2 : n === false ? 0 : n; n = Math.max(0, Math.min(NP - 1, n | 0)); if (hasMix) { P.page = n; P.open = n >= 2; } setP(n, !instant); if (hasMix && !instant) P.sync(DK); }, get open() { return mp >= 1.5; }, get page() { return Math.round(mp); } };
     setP(0, false);
     const inter = '.knob,.btn,.vfader,.cdisc,.sw,.hfader,#lib';   // the display (.dmhit) is a tap target but may start a swipe
     const zoneOf = y => { const r = chassis.getBoundingClientRect(), u = (y - r.top) / (r.height / 1070); return u >= 648 ? 'ctl' : 'jog'; };
-    let sg = null;
+    let sg = null, dragTo = 0, dragRaf = 0;
     window.addEventListener('pointerdown', e => {
       const t = e.target, z = zoneOf(e.clientY), btn = t.closest && t.closest('.btn');
       if (z === 'ctl' && btn) sg = { x: e.clientX, y: e.clientY, id: e.pointerId, z, btn, o: mp };
@@ -1931,7 +1996,7 @@ if ('mediaSession' in navigator) {
       if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y;
       const kill = () => { if (sg.btn) { try { sg.btn.dispatchEvent(new PointerEvent('pointercancel', { pointerId: e.pointerId, bubbles: true })); } catch (er) { /* ignore */ } sg.btn = null; } };
       if (sg.z === 'ctl' && !sg.h && Math.abs(dx) > 10 && Math.abs(dx) > 1.3 * Math.abs(dy)) { sg.h = true; kill(); }
-      if (sg.h) { const W = chassis.getBoundingClientRect().width; setP(clamp(sg.o - dx / W, 0, NP - 1), false); return; }
+      if (sg.h) { const W = chassis.getBoundingClientRect().width; dragTo = clamp(sg.o - dx / W, 0, NP - 1); if (!dragRaf) dragRaf = requestAnimationFrame(() => { dragRaf = 0; if (sg && sg.h) setP(dragTo, false); }); return; }
       if (sg.btn && Math.abs(dy) > 24 && Math.abs(dy) > 1.6 * Math.abs(dx)) kill();
     }, true);
     window.addEventListener('pointerup', e => {
