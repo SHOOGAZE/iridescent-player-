@@ -2,7 +2,7 @@
 
 **An analog-digital CD player for the phone, with a DJ console for tablet and desktop.** Load your own audio files, spin them on a jog disc, scratch, drop hot cues, loop, sync two decks and warm everything up with tape, drive and compression. One `index.html`, no build step, no dependencies.
 
-<img src="screens/screenshot.jpg" width="260" alt="IRIDESCENT">
+<img src="screens/screenshot.jpg" width="300" alt="IRIDESCENT">
 
 
 IRIDESCENT belongs to a small family of skeuomorphic, single-file instruments built around one look: frosted plastic over a visible PCB, a dot-matrix display, white ringed knobs and a single red accent.
@@ -11,35 +11,29 @@ IRIDESCENT belongs to a small family of skeuomorphic, single-file instruments bu
 
 | Project | What it is |
 | --- | --- |
-| **ZIIION** | The pocket bass-line machine. It defines the visual language: panel, knobs, switches, dot-matrix display. |
+| [**ZIIION**](https://github.com/SHOOGAZE/ziiion-synth) | The pocket bass-line machine. It defines the visual language: panel, knobs, switches, dot-matrix display. |
 | **LOOM** | A set of guitar-effect pedals as a PWA. It defines the sound: tape, drive and compression stages. |
 | **IRIDESCENT** | The CD player. ZIIION's face, LOOM's effects, plus transport built for a disc. |
 
 IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB traces, 5x7 dot-matrix font) and carries simplified versions of the LOOM TAPE, DRIVE and COMP stages. Sibling of the cassette player TAPE-4.
 
-## Quick guide
+## Screens
 
-![Quick guide](screens/guide.jpg)
+The lower half of the deck is a carousel of big-button pages (swipe sideways, three dots show where you are): pads and transport, functions and FX, and in DJ mode the mixer.
 
-Russian version: [screens/guide-ru.jpg](screens/guide-ru.jpg). In the app, the HELP key does the same on the display itself:
+![Pages](screens/pages.jpg)
 
-![Help mode](screens/help.jpg)
-
-DJ mode (hold JOG) on a phone: the mixer opens over the control buttons.
-
-<img src="screens/mixer.jpg" width="260" alt="Mixer">
-
-![Power-on, splash, scratch, library](screens/states.jpg)
-
-DJ mode on a tablet or a desktop is one console: two decks with a vertical mixer strip between them.
+On a tablet or a desktop, DJ mode is one console: two decks with a vertical mixer strip between them.
 
 ![Desktop, DJ](screens/desktop-dj.jpg)
+
+In the app, press HELP and tap any control: the dot-matrix display names it and scrolls what it does.
 
 Keyboard (DJ mode): `Q W E R` deck A play / cue / sync / loop, `U I O P` the same for deck B, `,` and `.` move the crossfader, `\` toggles AUTO MIX. The mouse wheel over the disc scrubs or bends.
 
 ## Features
 
-- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone it is a light DJ mode, in portrait only: two decks A/B and a mixer. Swipe left/right over the JOG area (free space or the display, not the disc itself, which scratches) to switch deck; two dots next to the JOG label show the active deck (red ring = playing). Swipe sideways in the control-button zone (hot cues, transport, function row): the whole lower half of the deck (including the FX knobs and LIB) slides away and the mixer takes its place, following your finger; swipe it back to the right (or press EXIT) to close, a vertical swipe works too (with a mouse: drag; on a trackpad: two-finger sideways swipe); The mixer has crossfader, LOW / HI, morphing FILTER, MASTER, CUE pre-listen with SPLIT and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. SYNC follows the other deck's tempo. The disc hub is just a spindle; PLAY lives in the transport row. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
+- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone, DJ is two decks A/B in portrait: swipe sideways over the jog area (free space or the display; the disc itself scratches) to switch deck, red ring on a dot = that deck is playing. Swipe sideways over the lower half to page through pads and transport, functions and FX, and the mixer. With a mouse, drag; on a trackpad, swipe with two fingers. The mixer has a crossfader, LOW / HI, a morphing FILTER per channel, MASTER, CUE pre-listen with SPLIT and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. EXIT goes back to the single player. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
 - **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG modes VINYL / CDJ (rim bends the speed).
 - **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display, the red LED pulses on the beat. **SYNC** locks the deck to the master tempo via varispeed (8/16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
 - **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on. (Experimental: `index.html#gapless` hands the sound back without the ~0.4 s hole iOS leaves after a seek; it is off by default until it is verified on a real iPhone.) The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
