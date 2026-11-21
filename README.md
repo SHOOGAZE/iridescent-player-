@@ -61,7 +61,7 @@ For offline use and installation, host the folder (for example on GitHub Pages) 
 
 ## Icon
 
-The home-screen icon is a simple iridescent disc with a white hub and a red accent square on a frosted gradient. It is drawn at runtime by the page; PNG exports are in `icons/` (512, 180, 32 px), and the manifest uses them.
+The home-screen icon is an iridescent disc in a bezel with a white hub and a red accent square, on a frosted board with thin PCB traces and ring vias, in the ZIIION style. It is drawn at runtime by the page; PNG exports are in `icons/` (512, 180, 32 px), and the manifest uses them.
 
 ## Notes
 

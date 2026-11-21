@@ -1964,11 +1964,33 @@ window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer &&
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !audio.paused) wakeOn(); });
 function drawIcon(S) {
   const c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'); g.scale(S / 180, S / 180);
-  const bgG = g.createLinearGradient(0, 0, 180, 180); bgG.addColorStop(0, '#f1d9d0'); bgG.addColorStop(.5, '#eef1f4'); bgG.addColorStop(1, '#bfe6ee'); g.fillStyle = bgG; g.fillRect(0, 0, 180, 180);
-  const rg = g.createRadialGradient(80, 76, 8, 90, 90, 64); rg.addColorStop(0, '#ffffff'); rg.addColorStop(.6, '#dfe9f2'); rg.addColorStop(1, '#c9b8d8');
-  g.fillStyle = rg; g.beginPath(); g.arc(90, 90, 64, 0, 6.283); g.fill(); g.strokeStyle = '#8f959e'; g.lineWidth = 3; g.stroke();
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(90, 90, 20, 0, 6.283); g.fill(); g.stroke(); g.fillStyle = '#0b0b0e'; g.beginPath(); g.arc(90, 90, 7, 0, 6.283); g.fill();
-  g.fillStyle = '#cb4a36'; g.fillRect(150, 22, 14, 14);
+  const bg = g.createLinearGradient(0, 0, 180, 180); bg.addColorStop(0, '#eceef1'); bg.addColorStop(1, '#d9dce1'); g.fillStyle = bg; g.fillRect(0, 0, 180, 180);
+  /* thin ZIIION-style traces and ring vias, like the original board */
+  g.strokeStyle = '#b3b8c0'; g.lineWidth = 1.5; g.lineCap = 'round'; g.lineJoin = 'round';
+  const tr = (pts, via) => { g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke(); if (via) { const q = pts[pts.length - 1]; g.beginPath(); g.arc(q[0], q[1], 3, 0, 6.283); g.stroke(); } };
+  tr([[12, 23], [75, 23]]); tr([[19, 26], [76, 26]]);
+  tr([[7, 68], [31, 68]]); tr([[13, 100], [32, 100]]); tr([[3, 127], [34, 127]]);
+  tr([[24, 160], [96, 160]]); tr([[34, 164], [94, 164], [100, 170], [134, 170]]);
+  tr([[166, 21], [180, 21]]);
+  const ring = (x, y) => { g.beginPath(); g.arc(x, y, 3.4, 0, 6.283); g.stroke(); };
+  ring(1, 14); ring(11, 18); ring(17, 74); ring(1, 103); ring(10, 112); ring(16, 166); ring(14.5, 165);
+  tr([[160, 100], [180, 100]]); tr([[168, 130], [180, 130]]);
+  /* bezel with soft halo, as in ZIIION */
+  g.save(); g.shadowColor = 'rgba(40,50,62,.28)'; g.shadowBlur = 10; g.shadowOffsetY = 3;
+  g.fillStyle = '#d3d6dc'; g.beginPath(); g.arc(90, 90, 70, 0, 6.283); g.fill(); g.restore();
+  const rim = g.createLinearGradient(40, 30, 140, 150); rim.addColorStop(0, '#fdfdfe'); rim.addColorStop(.5, '#8f959e'); rim.addColorStop(1, '#eef0f2');
+  g.fillStyle = rim; g.beginPath(); g.arc(90, 90, 65, 0, 6.283); g.fill();
+  g.fillStyle = '#9ea4ad'; g.beginPath(); g.arc(90, 90, 63, 0, 6.283); g.fill();
+  /* the disc: iridescent face, spindle hub */
+  const cg = g.createConicGradient ? g.createConicGradient(.5, 90, 90) : g.createLinearGradient(30, 30, 150, 150);
+  [['#ffd8c8', 0], ['#d4eaf6', .17], ['#f3dcf6', .34], ['#c9f0e8', .5], ['#ffe2d2', .67], ['#ded4f6', .84], ['#ffd8c8', 1]].forEach(([col, t]) => cg.addColorStop(t, col));
+  g.fillStyle = cg; g.beginPath(); g.arc(90, 90, 60, 0, 6.283); g.fill();
+  const hl = g.createRadialGradient(68, 64, 4, 80, 78, 62); hl.addColorStop(0, 'rgba(255,255,255,.75)'); hl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = hl; g.beginPath(); g.arc(90, 90, 60, 0, 6.283); g.fill();
+  g.strokeStyle = 'rgba(120,128,140,.35)'; g.lineWidth = 1; for (const r of [26, 38, 50]) { g.beginPath(); g.arc(90, 90, r, 0, 6.283); g.stroke(); }
+  g.strokeStyle = '#8f959e'; g.lineWidth = 2.4; g.fillStyle = '#fff'; g.beginPath(); g.arc(90, 90, 19, 0, 6.283); g.fill(); g.stroke();
+  g.fillStyle = '#0b0b0e'; g.beginPath(); g.arc(90, 90, 7, 0, 6.283); g.fill();
+  g.strokeStyle = '#b3b8c0'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(166, 21); g.lineTo(180, 21); g.stroke();
+  g.fillStyle = '#cb4a36'; g.fillRect(152, 14, 14, 14);
   return c;
 }
 
