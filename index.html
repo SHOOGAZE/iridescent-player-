@@ -288,6 +288,11 @@ html.lite .knob.st .krot{transition:none}
 #lib .lt{font-size:15px;letter-spacing:.12em}
 #lib .lb{padding:10px 9px;font-size:10px;letter-spacing:.1em}
 #lib{padding:26px 24px 20px}
+#lib .lk{display:none;flex:0 0 auto;margin-top:10px;padding-top:10px;border-top:1px solid #8d939c}
+#lib.keys .lk{display:block}
+#lib .lkd{font:800 15px/1 var(--mono);letter-spacing:.16em;color:#cb4a36;text-align:center;margin-bottom:9px}
+#lib .lkp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#lib .lkp .lb{text-align:center;padding:12px 0;font-size:15px}
 #lib .empty{padding:30px 6px;text-align:center;font:700 11px/1.6 var(--mono);letter-spacing:.14em;color:#5f616a}
 #lib .shelf-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 10px;padding:6px 2px}
 #lib .tile{display:block;min-width:0;padding:0;background:none;box-shadow:none;text-align:center}
@@ -803,7 +808,7 @@ function initAudio() {
   /* TAPE: wow + flutter, roll-off, soft saturation, hiss */
   const tape = stg(), dl = ctx.createDelay(.05); dl.delayTime.value = .012;
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 12000; lp.Q.value = .5;
-  const sat = ctx.createWaveShaper(); sat.curve = curve(1.6);
+  const sat = ctx.createWaveShaper(); sat.curve = curve(1.6); sat.oversample = '2x';
   tape.i.connect(dl); dl.connect(lp); lp.connect(sat); sat.connect(tape.wet);
   const l1 = ctx.createOscillator(); l1.frequency.value = .55; const g1 = ctx.createGain(); l1.connect(g1); g1.connect(dl.delayTime); l1.start();
   const l2 = ctx.createOscillator(); l2.frequency.value = 6.3; const g2 = ctx.createGain(); l2.connect(g2); g2.connect(dl.delayTime); l2.start();
@@ -814,7 +819,7 @@ function initAudio() {
   const hg = ctx.createGain(); ns.connect(hp); hp.connect(hg); hg.connect(tape.wet); ns.start();
   /* DRIVE */
   const drive = stg(), pre = ctx.createGain(), shp = ctx.createWaveShaper(), post = ctx.createGain();
-  shp.curve = curve(5); shp.oversample = '2x';
+  shp.curve = curve(5); shp.oversample = '4x';
   drive.i.connect(pre); pre.connect(shp); shp.connect(post); post.connect(drive.wet);
   /* COMP */
   const comp = stg(), cmp = ctx.createDynamicsCompressor(), mk = ctx.createGain();
@@ -824,9 +829,10 @@ function initAudio() {
   const vol = ctx.createGain(), lim = ctx.createDynamicsCompressor();
   lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .08;
   treb.connect(tape.i); tape.o.connect(drive.i); drive.o.connect(comp.i); comp.o.connect(vol); vol.connect(lim); lim.connect(MX ? MX.input(DK) : ctx.destination);
+  const msp = ctx.createChannelSplitter(2), aL = ctx.createAnalyser(), aR = ctx.createAnalyser(); aL.fftSize = aR.fftSize = 512; lim.connect(msp); msp.connect(aL, 0); msp.connect(aR, 1);   // L/R level meter taps
   const src = ctx.createMediaElementSource(audio); let elg = null;
   if (GAPLESS) { elg = ctx.createGain(); src.connect(elg); elg.connect(bus); } else src.connect(bus);
-  E = { bus, bass, treb, tape, drive, comp, g1, g2, lp, hg, pre, post, vol, src, elg, line: null, stream: null };
+  E = { aL, aR, bus, bass, treb, tape, drive, comp, g1, g2, lp, hg, pre, post, vol, src, elg, line: null, stream: null };
   applyFx();
   return E;
 }
@@ -863,6 +869,11 @@ function applyRate(snap) {   // the element's speed follows the target in small 
   const pp = !!S.lock;
   if (pp !== ppCur) { ppCur = pp; audio.preservesPitch = pp; audio.webkitPreservesPitch = pp; audio.mozPreservesPitch = pp; }
 }
+const BUFENG = (() => { try { return location.hash.indexOf('nobuf') < 0 && localStorage.getItem('iridescent.buf') !== '0'; } catch (e) { return true; } })();
+const SPIN_MS = 520;   // a CD player: the disc spins up first, the sound starts when it is at speed; stopping cuts the sound at once (no pitch fall - that is for tapes), the disc keeps turning for a moment
+if (S.cdspin === undefined) S.cdspin = 1;
+const stayBuf = () => BUFENG && !!SCR.buf && S.src !== 1 && (!S.lock || wsolaOK());
+function engState(p) { if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
 const scrOK = () => S.scr && cur() && cur().buf && S.src !== 1;
 const isPlaying = () => (SCR.active ? SCR.wasPlaying : !audio.paused);
 function rawPlay() { applyRate(true); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
@@ -871,14 +882,14 @@ function doPlay() {
   if (S.src === 1) { ui.msg('LINE IN'); return; }
   if (!cur()) { ui.openPicker(); return; }
   if (scrOK()) {
-    if (!SCR.active && audio.paused) { scrBegin(true, 0); ui.playState(true); }
-    if (SCR.active) { SCR.wasPlaying = true; if (!jog.on) { SCR.motor = baseRate(); SCR.coast = true; } ui.playState(true); return; }
+    if (!SCR.active && audio.paused) { scrBegin(true, 0); engState(true); }
+    if (SCR.active) { if (!SCR.wasPlaying && !jog.on && S.cdspin) { SCR.rate = 0; SCR.spinUntil = performance.now() + SPIN_MS; SCR.cd = true; } SCR.wasPlaying = true; if (!jog.on) { SCR.motor = baseRate(); SCR.coast = true; } engState(true); return; }
   }
   rawPlay();
 }
 function doPause() {
-  if (SCR.active) { SCR.wasPlaying = false; if (!jog.on) SCR.motor = 0; ui.playState(false); return; }
-  if (scrOK() && !audio.paused) { scrBegin(true, audio.playbackRate); SCR.wasPlaying = false; SCR.motor = 0; return; }
+  if (SCR.active) { SCR.wasPlaying = false; SCR.spinUntil = 0; if (!jog.on) { SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } } engState(false); return; }
+  if (scrOK() && !audio.paused) { scrBegin(true, audio.playbackRate); SCR.wasPlaying = false; SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } return; }
   audio.pause();
 }
 function togglePlay() { if (isPlaying()) doPause(); else doPlay(); }
@@ -902,7 +913,7 @@ function scrInit() {
   const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
   const ns = ctx.createBufferSource(); ns.buffer = nb; ns.loop = true;
   const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.1;
-  SCR.ng = ctx.createGain(); SCR.ng.gain.value = 0; ns.connect(bp); bp.connect(SCR.ng); SCR.ng.connect(E.bus); ns.start();
+  SCR.ng = ctx.createGain(); SCR.ng.gain.value = 0; ns.connect(bp); bp.connect(SCR.ng); SCR.ng.connect(E.bus); ns.start(); wsolaInit();
 }
 function scrRev(pos) {
   const b = SCR.buf, sr = b.sampleRate, w1 = Math.min(b.length, Math.floor((pos + 1.5) * sr)), w0 = Math.max(0, w1 - Math.floor(12 * sr)), n = w1 - w0;
@@ -910,12 +921,85 @@ function scrRev(pos) {
   for (let ch = 0; ch < b.numberOfChannels; ch++) { const s = b.getChannelData(ch), d = rb.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = s[w1 - 1 - i]; }
   SCR.rev = { buf: rb, w0, w1 };
 }
+/* WSOLA time-stretch (LOCK): the buffer is read by a worklet that changes tempo without changing pitch */
+const WS_SRC = `
+class WS extends AudioWorkletProcessor {
+  static get parameterDescriptors() { return [{ name: 'rate', defaultValue: 1, minValue: .1, maxValue: 4, automationRate: 'k-rate' }]; }
+  constructor() {
+    super(); const N = 2048, H = 1024; this.N = N; this.H = H; this.T = 384;
+    this.win = new Float32Array(N); for (let i = 0; i < N; i++) this.win[i] = .5 - .5 * Math.cos(2 * Math.PI * i / N);
+    this.x = null; this.len = 0; this.play = false; this.a = 0; this.s = -1;
+    this.acc = [new Float32Array(N), new Float32Array(N)]; this.QS = H * 4; this.q = [new Float32Array(this.QS), new Float32Array(this.QS)]; this.qr = 0; this.qn = 0;
+    this.port.onmessage = e => {
+      const m = e.data;
+      if ('data' in m) { this.x = m.data; this.len = m.data ? m.data[0].length : 0; this.play = false; this.qn = 0; }
+      if (m.play === true) { this.a = m.pos * sampleRate; this.s = -1; this.acc[0].fill(0); this.acc[1].fill(0); this.qr = 0; this.qn = 0; this.play = !!this.x; }
+      else if (m.play === false) { this.play = false; this.qn = 0; }
+    };
+  }
+  frame(rate) {
+    const N = this.N, H = this.H, T = this.T, xs = this.x, x0 = xs[0], x1 = xs[1] || x0, len = this.len; let s;
+    if (this.s < 0) s = Math.max(0, Math.min(len - N - 1, Math.round(this.a)));
+    else {
+      this.a += H * rate; const nom = Math.round(this.a), tp = this.s + H;
+      if (nom >= len - N - 1 - T) { this.play = false; this.qn = 0; this.port.postMessage({ end: 1 }); return false; }
+      let best = -1e30; s = nom;
+      for (let d = -T; d <= T; d += 2) {
+        const c = nom + d; if (c < 0) continue;
+        let sum = 0, en = 1e-9; for (let i = 0; i < H; i += 4) { const v = x0[c + i]; sum += v * x0[tp + i]; en += v * v; }
+        const sc = sum / Math.sqrt(en); if (sc > best) { best = sc; s = c; }
+      }
+    }
+    const w = this.win, a0 = this.acc[0], a1 = this.acc[1];
+    for (let i = 0; i < N; i++) { const g = w[i]; a0[i] += g * x0[s + i]; a1[i] += g * x1[s + i]; }
+    const QS = this.QS, q0 = this.q[0], q1 = this.q[1]; let wi = (this.qr + this.qn) % QS;
+    for (let i = 0; i < H; i++) { q0[wi] = a0[i]; q1[wi] = a1[i]; if (++wi === QS) wi = 0; }
+    this.qn += H; a0.copyWithin(0, H); a1.copyWithin(0, H); a0.fill(0, N - H); a1.fill(0, N - H); this.s = s; return true;
+  }
+  process(inp, out, par) {
+    const o = out[0], n = o[0].length; if (!this.play && !this.qn) return true;
+    const rate = par.rate[0];
+    while (this.play && this.qn < n) if (!this.frame(rate)) break;
+    const QS = this.QS, q0 = this.q[0], q1 = this.q[1], o0 = o[0], o1 = o[1];
+    for (let i = 0; i < n && this.qn > 0; i++) { o0[i] = q0[this.qr]; if (o1) o1[i] = q1[this.qr]; if (++this.qr === QS) this.qr = 0; this.qn--; }
+    return true;
+  }
+}
+registerProcessor('ws', WS);`;
+function wsolaInit() {
+  if (SCR.wn || SCR.winit || !ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return; SCR.winit = true;
+  try {
+    const url = URL.createObjectURL(new Blob([WS_SRC], { type: 'application/javascript' }));
+    ctx.audioWorklet.addModule(url).then(() => {
+      const n = new AudioWorkletNode(ctx, 'ws', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
+      SCR.wg = ctx.createGain(); SCR.wg.gain.value = 0; n.connect(SCR.wg); SCR.wg.connect(SCR.out); SCR.wn = n; SCR.wready = true;
+    }).catch(() => { SCR.wready = false; });
+  } catch (e) { SCR.wready = false; }
+}
+function wsolaOK() {
+  if (!SCR.wready || !SCR.buf) return false;
+  if (SCR.wfed !== SCR.buf) {
+    const b = SCR.buf; if (b.length * b.numberOfChannels * 4 > 90e6) return false;
+    const d = []; for (let c = 0; c < b.numberOfChannels; c++) d.push(b.getChannelData(c).slice());
+    SCR.wn.port.postMessage({ data: d }, d.map(a => a.buffer)); SCR.wfed = b;
+  }
+  return true;
+}
+let wsId = 0;
+function wsolaStart() {
+  const n = ctx.currentTime, g = SCR.wg, id = ++wsId; g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(1, n + .006);
+  const prm = SCR.wn.parameters.get('rate'); prm.cancelScheduledValues(n); prm.setValueAtTime(Math.max(.1, Math.abs(SCR.rate)), n);
+  SCR.wn.port.postMessage({ play: true, pos: SCR.pos });
+  const s = { playbackRate: prm, stop: () => setTimeout(() => { if (wsId === id && SCR.wn) SCR.wn.port.postMessage({ play: false }); }, 50) };
+  SCR.node = { s, g, dir: 1, w: true };
+}
 function scrStop() {
   const nd = SCR.node; if (!nd) return; SCR.node = null;
   const n = ctx.currentTime; try { nd.g.gain.cancelScheduledValues(n); nd.g.gain.setTargetAtTime(0, n, .004); nd.s.stop(n + .04); } catch (e) { /* ignore */ }
 }
 function scrStart(dir) {
   scrStop(); const n = ctx.currentTime, sr = SCR.buf.sampleRate;
+  if (dir > 0 && S.lock && !jog.on && !SCR.search && SCR.wasPlaying && SCR.motor > 0 && wsolaOK()) { wsolaStart(); return; }
   const g = ctx.createGain(); g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(1, n + .006); g.connect(SCR.out);
   const s = ctx.createBufferSource(); let off;
   if (dir > 0) { s.buffer = SCR.buf; off = SCR.pos; }
@@ -926,7 +1010,7 @@ function scrStart(dir) {
 function scrBegin(coast, r0) {
   const t = cur(); if (!S.scr || !t || !t.buf || S.src === 1) return false;
   initAudio(); if (ctx.state !== 'running') ctx.resume(); scrInit();
-  SCR.buf = t.buf; SCR.rev = null; SCR.pos = audio.currentTime || 0; SCR.rate = r0 || 0; SCR.restart = false; SCR.search = false;
+  SCR.buf = t.buf; SCR.rev = null; SCR.pos = audio.currentTime || 0; SCR.rate = r0 || 0; SCR.restart = false; SCR.search = false; SCR.c = 0; SCR.spinUntil = 0; SCR.cd = false;
   SCR.wasPlaying = coast ? (r0 > 0) : !audio.paused; SCR.motor = SCR.wasPlaying ? baseRate() : 0; SCR.coast = !!coast; SCR.active = true;
   if (SCR.hand) handAbort(); else if (E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); }
   audio.pause(); return true;
@@ -974,25 +1058,37 @@ function scrFinishHard(play) {
 }
 function scrTick(dt, vel) {
   const dur = SCR.buf.duration;
-  if (vel === null) { const tg = SCR.motor, tau = SCR.search ? .14 : (tg !== 0 ? .16 : .5); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / tau)); if (tg === 0) SCR.rate -= Math.sign(SCR.rate) * Math.min(Math.abs(SCR.rate), .25 * dt); }
-  else { const tg = clamp(vel / 198, -6, 6); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / .022)); }
-  SCR.pos += SCR.rate * dt;
+  if (vel === null && SCR.spinUntil) { if (performance.now() >= SCR.spinUntil) { SCR.spinUntil = 0; SCR.rate = SCR.motor; } else SCR.rate = 0; }
+  else if (vel === null) { const tg = SCR.motor, tau = SCR.search ? .14 : (tg !== 0 ? (Math.abs(SCR.rate - tg) < .12 ? .045 : .16) : .5); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / tau)); if (tg === 0) SCR.rate -= Math.sign(SCR.rate) * Math.min(Math.abs(SCR.rate), .25 * dt); }
+  else { SCR.spinUntil = 0; SCR.cd = false; const tg = clamp(vel / 198, -6, 6); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / .022)); }
+  { const c = ctx.currentTime, dp = SCR.c ? Math.min(c - SCR.c, 1) : dt; SCR.c = c; SCR.pos += SCR.rate * (dp > 0 ? dp : dt); }   // position follows the audio clock, not the frame rate
   if (SCR.pos <= 0) { SCR.pos = 0; if (SCR.rate < 0) SCR.rate = 0; }
   if (SCR.pos >= dur - .05) { SCR.pos = dur - .05; if (SCR.rate > 0) SCR.rate = 0; }
   const dir = Math.abs(SCR.rate) < .03 ? 0 : (SCR.rate > 0 ? 1 : -1), nd = SCR.node, sr = SCR.buf.sampleRate;
   if (!dir) { if (nd) scrStop(); }
-  else if (!nd || nd.dir !== dir || SCR.restart || (dir < 0 && SCR.rev && SCR.pos * sr < SCR.rev.w0 + sr * .15)) { SCR.restart = false; scrStart(dir); }
+  else if (!nd || nd.dir !== dir || SCR.restart || (nd.w && (vel !== null || SCR.search)) || (dir < 0 && SCR.rev && SCR.pos * sr < SCR.rev.w0 + sr * .15)) { SCR.restart = false; scrStart(dir); }
   else nd.s.playbackRate.setTargetAtTime(Math.abs(SCR.rate), ctx.currentTime, .008);
   SCR.ng.gain.setTargetAtTime(Math.min(.03, Math.abs(SCR.rate) * .014) * (dir ? 1 : 0), ctx.currentTime, .015);
   if (SCR.hand) { if ((jog.on && !jog.bend) || SCR.search || !SCR.wasPlaying || SCR.motor <= 0) handAbort(); else handCheck(); if (!SCR.active) return; }
+  if (vel === null && !SCR.search && !SCR.hand && SCR.wasPlaying && stayBuf()) {   // stay on the buffer: varispeed is just the node's playbackRate
+    if (SCR.pos >= dur - .06) { trackEnd(); return; }
+    SCR.motor = clamp(baseRate() * nudge, .25, 4);
+    if (nd && Math.abs(SCR.rate - SCR.motor) < .03 && ((S.lock && !nd.w) || (!S.lock && nd.w))) SCR.restart = true;
+    return;
+  }
   if (vel === null && !SCR.search && !SCR.hand) {
     if (SCR.motor > 0 && (Math.abs(SCR.rate - SCR.motor) < .03 || SCR.pos >= dur - .06)) scrFinish(true);
     else if (SCR.motor === 0 && Math.abs(SCR.rate) < .04) scrFinish(false);
   }
 }
+function trackEnd() {
+  if (S.mode === 1) { SCR.pos = 0; SCR.restart = true; SCR.rate = SCR.motor; return; }
+  const j = nextIdx(true);
+  if (j >= 0) loadTrack(j, true); else { scrFinishHard(false); seek(0); ui.msg('END'); }
+}
 function seek(t) {
   if (SCR.active) { SCR.pos = clamp(t, 0, Math.max(0, SCR.buf.duration - .05)); SCR.restart = true; return; } const d = audio.duration; if (!isFinite(d) || !cur()) return; audio.currentTime = clamp(t, 0, Math.max(0, d - .05)); }
-function seekBy(d) { seek((audio.currentTime || 0) + d); }
+function seekBy(d) { seek(curPos() + d); }
 function playIdx(i) { loadTrack(i, true); }
 function nextIdx(auto) {
   const n = Q.list.length; if (!n) return -1;
@@ -1002,7 +1098,7 @@ function nextIdx(auto) {
 }
 function next() { const j = nextIdx(false); if (j >= 0) loadTrack(j, isPlaying()); }
 function prev() {
-  if ((audio.currentTime || 0) > 3 || Q.idx <= 0) { seek(0); return; }
+  if (curPos() > 3 || Q.idx <= 0) { seek(0); return; }
   loadTrack(Q.idx - 1, isPlaying());
 }
 audio.addEventListener('timeupdate', () => savePos(false));
@@ -1012,7 +1108,7 @@ audio.addEventListener('ended', () => {
   if (j >= 0) loadTrack(j, true); else { seek(0); ui.msg('END'); }
 });
 audio.addEventListener('play', () => { wakeOn(); ui.playState(true); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; });
-audio.addEventListener('pause', () => { wakeOff(); ui.playState(false); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; });
+audio.addEventListener('pause', () => { if (SCR.active && SCR.wasPlaying) return; wakeOff(); ui.playState(false); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; });
 audio.addEventListener('loadedmetadata', () => { const t = cur(); if (t) { t.dur = audio.duration; ui.trackChanged(true); } });
 audio.addEventListener('error', () => { ui.msg('CANT READ FILE', 2000); });
 
@@ -1027,9 +1123,10 @@ function loadTrack(i, play) {
   if (i < 0 || i >= Q.list.length) return;
   if (!S.sync && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate();
   mixDone = false; Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) x.buf = null; });
+  if (SCR.active) { scrStop(); SCR.hand = null; SCR.active = false; SCR.search = false; SCR.wasPlaying = false; if (SCR.ng) SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02); if (E && E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); } }
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; ppCur = null; audio.load();
-  cues = loadCues(t.key); loop = { a: null, b: null, on: false, auto: false }; mainCue = 0; slip = null;
+  cues = loadCues(t.key); loop = { a: null, b: null, on: false, auto: false }; mainCue = 0; slip = null; try { localStorage.setItem('iridescent.last', t.key); } catch (e) { /* ignore */ }
   applyRate(); setCover(t); resumePos(t); if (S.sync && t.bpm) syncApply(true);
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
   if (!t.peaks && !t.nopk) computePeaks(t);
@@ -1042,10 +1139,10 @@ const PK = 'iridescent.pos';
 function posAll() { try { return JSON.parse(localStorage.getItem(PK)) || {}; } catch (e) { return {}; } }
 let lastPosSave = 0;
 function savePos(force) {
-  const t = cur(); if (!t || !isFinite(audio.currentTime)) return;
+  const t = cur(); if (!t || !isFinite(curPos())) return;
   const n = Date.now(); if (!force && n - lastPosSave < 2000) return; lastPosSave = n;
   try {
-    const o = posAll(); delete o[t.key]; o[t.key] = Math.round(audio.currentTime * 10) / 10;
+    const o = posAll(); delete o[t.key]; o[t.key] = Math.round(curPos() * 10) / 10;
     const ks = Object.keys(o); if (ks.length > 60) delete o[ks[0]];
     localStorage.setItem(PK, JSON.stringify(o));
   } catch (e) { /* ignore */ }
@@ -1079,14 +1176,21 @@ function setCover(t) {
   } catch (e) { try { cdrot.style.background = coverBg(t.key); } catch (_) { /* ignore */ } }
 }
 addEventListener('pagehide', () => savePos(true));
-document.addEventListener('visibilitychange', () => { if (document.hidden) savePos(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { savePos(true); if (SCR.active && SCR.wasPlaying && !jog.on && !SCR.search) scrFinishHard(true); } });
+/* ================= library persistence: added files live in IndexedDB, so the shelf survives a reload ================= */
+let _dbp = null;
+const idb = () => _dbp || (_dbp = new Promise((res, rej) => { try { const r = indexedDB.open('iridescent-lib', 1); r.onupgradeneeded = () => r.result.createObjectStore('tracks', { keyPath: 'key' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }));
+const dbPut = async item => { try { const d = await idb(); d.transaction('tracks', 'readwrite').objectStore('tracks').put({ key: item.key, name: item.name, file: item.file, dur: item.dur || 0, seq: item.seq || Date.now() }); } catch (e) { /* storage unavailable: the shelf just stays per-session */ } };
+const dbDel = async key => { try { const d = await idb(); d.transaction('tracks', 'readwrite').objectStore('tracks').delete(key); } catch (e) { /* ignore */ } };
+const dbAll = async () => { try { const d = await idb(); return await new Promise(res => { const q = d.transaction('tracks').objectStore('tracks').getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); }); } catch (e) { return []; } };
+let _seq = 0;
 async function addFiles(files) {
   const ok = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|aif|aiff|caf|mp4|webm)$/i;
   let added = 0;
   for (const f of Array.from(files || [])) {
     if (!(f.type && f.type.indexOf('audio') === 0) && !ok.test(f.name)) continue;
-    const item = { file: f, name: f.name.replace(/\.[^.]+$/, ''), key: keyOf(f), dur: 0, peaks: null };
-    Q.list.push(item); added++;
+    const item = { file: f, name: f.name.replace(/\.[^.]+$/, ''), key: keyOf(f), dur: 0, peaks: null, seq: Date.now() * 1000 + (_seq++ % 1000) };
+    Q.list.push(item); added++; dbPut(item);
     try { const a = new Audio(), u = URL.createObjectURL(f); a.preload = 'metadata'; a.onloadedmetadata = () => { if (!item.dur && isFinite(a.duration)) item.dur = a.duration; URL.revokeObjectURL(u); ui.libBuild(); }; a.onerror = () => URL.revokeObjectURL(u); a.src = u; } catch (e) { /* ignore */ }
   }
   if (!added) { ui.msg('NO AUDIO FILES', 1600); return; }
@@ -1147,9 +1251,9 @@ try {
     act: n => { if (n === 'play') togglePlay(); else if (n === 'cueDown') cueDown(); else if (n === 'cueUp') cueUp(); else if (n === 'sync') syncToggle(); else if (n === 'loop') loopToggle(); },
     fresh: () => !!cur() && !mixDone && !isPlaying() && curPos() < 1.5,
     peekNext: () => { const j = nextIdx(true); return (j >= 0 && j !== Q.idx) ? Q.list[j] : null; },
-    take: item => { Q.list.push({ file: item.file, name: item.name, key: item.key, dur: item.dur || 0, peaks: null }); ui.libBuild(); loadTrack(Q.list.length - 1, false); },
-    nextBeatIn: () => { const t = cur(); if (!effBpm(t)) return 0; const p = beatLen(t), ph = (((audio.currentTime - t.off) / p) % 1 + 1) % 1; return (1 - ph) * p / (audio.playbackRate || 1); },
-    start: () => { const t = cur(); if (!t) return; S.sync = 1; ledSync.classList.add('on'); save(); if (t.bpm) syncApply(true); try { audio.currentTime = effBpm(t) ? Math.max(0, t.off) : 0; } catch (e) { /* ignore */ } rawPlay(); },
+    take: item => { const ni = { file: item.file, name: item.name, key: item.key, dur: item.dur || 0, peaks: null, seq: Date.now() * 1000 + (_seq++ % 1000) }; Q.list.push(ni); dbPut(ni); ui.libBuild(); loadTrack(Q.list.length - 1, false); },
+    nextBeatIn: () => { const t = cur(); if (!effBpm(t)) return 0; const p = beatLen(t), ph = (((curPos() - t.off) / p) % 1 + 1) % 1; return (1 - ph) * p / ((SCR.active ? SCR.rate : audio.playbackRate) || 1); },
+    start: () => { const t = cur(); if (!t) return; S.sync = 1; ledSync.classList.add('on'); save(); if (t.bpm) syncApply(true); { const p0 = effBpm(t) ? Math.max(0, t.off) : 0; if (SCR.active) { seek(p0); SCR.wasPlaying = true; if (!jog.on) { SCR.motor = baseRate(); SCR.coast = true; } engState(true); } else { try { audio.currentTime = p0; } catch (e) { /* ignore */ } rawPlay(); } } },
     finish: handed => {
       if (SCR.active) scrFinish(false); audio.pause(); mixDone = true;
       if (handed) { const j1 = nextIdx(true); if (j1 >= 0) Q.idx = j1; }
@@ -1189,7 +1293,7 @@ async function computePeaks(t) {
     let mx = 0; for (let b = 0; b < n; b++) if (pk[b] > mx) mx = pk[b];
     for (let b = 0; b < n; b++) pk[b] = Math.pow(pk[b] / (mx || 1), .7);
     t.peaks = pk; if (!t.dur) t.dur = buf.duration;
-    if (cur() === t) scrKeep(t, buf);
+    if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && S.src !== 1 && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
     const cached = bpmStore()[t.key];
     if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; }
     else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } }
@@ -1293,13 +1397,12 @@ function makeDemo() {
 /* ================= UI: frame ================= */
 S.src = 0;
 [[12, 1050, 60], [474, 1050, -15]].forEach(c => el('screw', chassis, 'left:' + c[0] + 'px;top:' + c[1] + 'px;--r:' + c[2] + 'deg'));
-el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:256px'); el('groove', chassis, 'top:636px');
+el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:226px'); el('groove', chassis, 'top:636px');
 el('vline', chassis, 'left:292px;top:8px;height:74px');
 const RED = '#b2432f';
 const pad2 = n => (n < 10 ? '0' : '') + n;
 
 /* ---- top band ---- */
-lab('IRIDESCENT', 24, 22, { cls: 'lg', a: 'l', w: 800 });
 ['SOURCE', 'RANGE'].forEach((n, i) => lab(n, [172, 252][i], 20, { cls: 'sm' }));
 const swSrc = mkSwitch(172, 50, 0, v => {
   S.src = v;
@@ -1316,10 +1419,10 @@ lab('8  16', 252, 76, { cls: 'sm' });
 lab('LOOM FX', 394, 76, { cls: 'sm', c: RED });
 
 /* ---- dot-matrix display ---- */
-const COLS = 142, ROWS = 44, PITCH = 3, PAD_ = 6, DX = 31, DY = 100;
+const COLS = 142, ROWS = 34, PITCH = 3, PAD_ = 6, DX = 31, DY = 100;
 el('redsq', chassis, 'left:' + DX + 'px;top:' + (DY - 10) + 'px');
 const bz = el('dm', chassis, 'left:' + DX + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
-const dpr = Math.min(window.devicePixelRatio || 1, 3);
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
 const cv = document.createElement('canvas');
 cv.width = Math.round(COLS * PITCH * 2 * dpr); cv.height = Math.round(ROWS * PITCH * 2 * dpr);
 cv.style.cssText = 'position:absolute;left:' + PAD_ + 'px;top:' + PAD_ + 'px;width:' + COLS * PITCH + 'px;height:' + ROWS * PITCH + 'px';
@@ -1376,11 +1479,13 @@ const bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv
   };
 G = {}; Object.keys(F).forEach(k => { G[k] = F[k].split(' ').map(r => r.split('').map(c => c === '1')); });
   Object.entries({'А': 'A', 'В': 'B', 'Е': 'E', 'Ё': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X'}).forEach(([k, v]) => { G[k] = G[v]; });   // Cyrillic look-alikes share the Latin glyphs
+  let MCLIP = false, DOTC = null;
   function dot(x, y, a) { // a = brightness 0..1
     if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
+    if (MCLIP && x >= 131 && y >= 8 && y <= 24) return;   // the level meter owns this corner
     const cx = (x + .5) * PITCH * K, cy = (y + .5) * PITCH * K;
-    dctx.fillStyle = a >= 1 ? '#f4f5f7' : 'rgba(244,245,247,' + a + ')';
-    dctx.beginPath(); dctx.arc(cx, cy, 1.15 * K, 0, 6.283); dctx.fill();
+    dctx.fillStyle = DOTC ? DOTC : a >= 1 ? '#f4f5f7' : 'rgba(244,245,247,' + a + ')'; if (DOTC) dctx.globalAlpha = a;
+    dctx.beginPath(); dctx.arc(cx, cy, 1.15 * K, 0, 6.283); dctx.fill(); if (DOTC) dctx.globalAlpha = 1;
   }
   function text(str, x, y, a, sc) { // returns end x
     sc = sc || 1;
@@ -1396,12 +1501,12 @@ G = {}; Object.keys(F).forEach(k => { G[k] = F[k].split(' ').map(r => r.split(''
   const width = (s, sc) => String(s).length * 6 * (sc || 1) - (sc || 1);
 
 /* ================= UI: jog zone (faders, disc, ring) ================= */
-const JX = 250, JY = 450;
-lab('VOLUME', 44, 284, { cls: 'lg' }); lab('VARISPEED', 456, 284, { cls: 'lg' });
+const JX = 250, JY = 432;
+lab('VOLUME', 44, 254, { cls: 'lg' }); lab('VARISPEED', 456, 254, { cls: 'lg' });
 const volLab = lab(String(Math.round(S.vol * 100)), 44, 620, { cls: 'lg', c: RED });
 const varLab = lab('+0.0%', 456, 620, { cls: 'lg', c: RED });
-lab('MAX', 44, 302, { cls: 'sm', s: 7.5 }); lab('MIN', 44, 602, { cls: 'sm', s: 7.5 });
-lab('+', 456, 302, { cls: 'sm', s: 9 }); lab('-', 456, 602, { cls: 'sm', s: 9 });
+lab('MAX', 44, 272, { cls: 'sm', s: 7.5 }); lab('MIN', 44, 602, { cls: 'sm', s: 7.5 });
+lab('+', 456, 272, { cls: 'sm', s: 9 }); lab('-', 456, 602, { cls: 'sm', s: 9 });
 function mkFader(o) {
   const f = el('vfader', chassis, 'left:' + (o.x - 28) + 'px;top:' + (o.y - 28) + 'px;width:56px;height:' + (o.len + 56) + 'px');
   el('vslot', chassis, 'left:' + (o.x - 7) + 'px;top:' + (o.y - 8) + 'px;height:' + (o.len + 16) + 'px');
@@ -1435,11 +1540,11 @@ function mkFader(o) {
   f.addEventListener('pointerup', end); f.addEventListener('pointercancel', end);
   return { el: f, set(nv) { v = nv; render(); }, get value() { return v; } };
 }
-mkFader({ x: 44, y: 322, len: 260, value: S.vol, def: .7, onChange: v => { S.vol = v; save(); initAudio(); applyFx(); volLab.textContent = Math.round(v * 100); } });
-const vFader = mkFader({ x: 456, y: 322, len: 260, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
+mkFader({ x: 44, y: 292, len: 290, value: S.vol, def: .7, onChange: v => { S.vol = v; save(); initAudio(); applyFx(); volLab.textContent = Math.round(v * 100); } });
+const vFader = mkFader({ x: 456, y: 292, len: 290, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
 
 /* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
-const hub = el('hubbtn', chassis, 'left:' + (JX - 46) + 'px;top:' + (JY - 46) + 'px;width:92px;height:92px');
+const hub = el('hubbtn', chassis, 'left:' + (JX - 48) + 'px;top:' + (JY - 48) + 'px;width:96px;height:96px');
 
 /* ---- cue point strip: 8 tall hot-cue pads (thumb zone) ---- */
 const cueLed = [], pdn = [];
@@ -1529,15 +1634,15 @@ chassis = _c1;
 
 
 /* ================= HELP mode: tap a control, the display explains it ================= */
-const ledHelp = led(50, 42, '');
+const ledHelp = led(50, 24, '');
 let hlTo = 0, hlLong = false;
-mkBtn({ x: 22, y: 52, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help',
+mkBtn({ x: 22, y: 34, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help',
   down: () => { hlLong = false; clearTimeout(hlTo); hlTo = setTimeout(() => { hlLong = true; helpLang = helpLang === 'ru' ? 'en' : 'ru'; try { localStorage.setItem('iridescent.lang', helpLang); } catch (e) { /* ignore */ } if (helpOn) { const hi = helpIntro(); helpName = clean(hi[0]); helpDesc = clean(hi[1]); helpAt = performance.now(); } else ui.msg(helpLang === 'ru' ? 'РУССКИЙ' : 'ENGLISH'); }, 700); },
   up: (e, c) => { clearTimeout(hlTo); if (c || hlLong) return; helpOn = !helpOn; ledHelp.classList.toggle('on', helpOn); const hi = helpIntro(); helpName = helpOn ? clean(hi[0]) : ''; helpDesc = helpOn ? clean(hi[1]) : ''; helpAt = performance.now(); } });
 if (S.jm === undefined) S.jm = S.scr ? 0 : 0;
 S.scr = S.jm === 2 ? 0 : 1;
 const JMN = ['VINYL', 'CDJ', 'NO SCRATCH']; let jgLong = false, jgTo = 0;
-const bScr = mkBtn({ x: 84, y: 52, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'JOG', id: 'scr', down: () => { jgLong = false; if (window.parent === window) jgTo = setTimeout(() => { jgLong = true; ui.msg('DJ MODE'); setMode(true); }, 700); }, up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = (S.jm + 1) % 3; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
+const bScr = mkBtn({ x: 84, y: 34, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'JOG', id: 'scr', down: () => { jgLong = false; if (window.parent === window) jgTo = setTimeout(() => { jgLong = true; ui.msg('DJ MODE'); setMode(true); }, 700); }, up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = (S.jm + 1) % 3; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
 const HELP = {
   SOURCE: ['SOURCE', 'FILE PLAYS YOUR AUDIO FILES  LINE LISTENS TO THE INPUT  USE HEADPHONES'],
   RANGE: ['RANGE', 'VARISPEED RANGE  8 OR 16 PERCENT'],
@@ -1706,16 +1811,16 @@ let frostEl = null;
 
 /* ================= disc + progress ring (built above the board) ================= */
 {
-  const hz = el('haze round', chassis, 'left:' + (JX - 186) + 'px;top:' + (JY - 186) + 'px;width:372px;height:372px');
+  const hz = el('haze round', chassis, 'left:' + (JX - 196) + 'px;top:' + (JY - 196) + 'px;width:392px;height:392px');
   chassis.insertBefore(hz, frostEl.nextSibling);
 }
 const ringLeds = [];
-for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; ringLeds.push(led(JX + Math.sin(a) * 170, JY - Math.cos(a) * 170, '')); }
-el('cdwell', chassis, 'left:' + (JX - 150) + 'px;top:' + (JY - 150) + 'px;width:300px;height:300px');
-const disc = el('cdisc', chassis, 'left:' + (JX - 136) + 'px;top:' + (JY - 136) + 'px;width:272px;height:272px');
+for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; ringLeds.push(led(JX + Math.sin(a) * 180, JY - Math.cos(a) * 180, '')); }
+el('cdwell', chassis, 'left:' + (JX - 159) + 'px;top:' + (JY - 159) + 'px;width:318px;height:318px');
+const disc = el('cdisc', chassis, 'left:' + (JX - 144) + 'px;top:' + (JY - 144) + 'px;width:288px;height:288px');
 const cdrot = el('cdrot', disc); el('cdhole', disc);
-if (window.parent === window) lab('JOG', JX, JY + 190, { cls: 'sm' });   // in the DJ frames the deck dots take its place
-const beatSq = el('redsq', chassis, 'left:' + (JX - 4) + 'px;top:' + (JY - 196) + 'px');
+if (window.parent === window) lab('JOG', JX, JY + 197, { cls: 'sm' });   // in the DJ frames the deck dots take its place
+const beatSq = el('redsq', chassis, 'left:' + (JX - 4) + 'px;top:' + (JY - 202) + 'px');
 let lastRing = 0;
 function setRing(frac) {
   const n = Math.floor(clamp(frac, 0, 1) * 72);
@@ -1752,7 +1857,30 @@ disc.addEventListener('wheel', e => { e.preventDefault(); if (!cur()) return; if
 /* ================= display drawing ================= */
 let helpOn = false, helpName = '', helpDesc = '', helpAt = 0;
 let msgText = '', msgUntil = 0, trackStart = 0, splashing = false;
-function drawDisplay(now) {
+const mt = { l: 0, r: 0, t: 0, clip: 0 }, mbuf = new Float32Array(512);
+function meterRead(now) {
+  const dt = Math.min(200, now - (mt.t || now)); mt.t = now;
+  let l = 0, r = 0;
+  if (E && E.aL && (!audio.paused || SCR.active || S.src === 1)) {
+    const pk = a => { a.getFloatTimeDomainData(mbuf); let m = 0; for (let i = 0; i < mbuf.length; i++) { const v = Math.abs(mbuf[i]); if (v > m) m = v; } return m; };
+    const pl = pk(E.aL), pr = pk(E.aR); if (Math.max(pl, pr) > .985) mt.clip = now + 700;
+    const lv = p => clamp((20 * Math.log10(p + 1e-6) + 54) / 54, 0, 1); l = lv(pl); r = lv(pr);
+  }
+  mt.l = Math.max(l, mt.l - dt * .0011); mt.r = Math.max(r, mt.r - dt * .0011);
+}
+function drawMeter(now) {
+  meterRead(now); MCLIP = false;
+  [[133, mt.l], [137, mt.r]].forEach(([x0, v]) => {
+    for (let i = 0; i < 15; i++) {
+      const lit = (i + .5) / 15 <= v, hot = i >= 13 || (i >= 12 && now < mt.clip);
+      DOTC = hot ? '#ff4a38' : '#f4f5f7';
+      for (let c = 0; c < 3; c++) dot(x0 + c, 23 - i, lit ? 1 : .16);
+    }
+  });
+  DOTC = null; MCLIP = true;
+}
+function drawDisplay(now) { MCLIP = true; try { drawDisplay0(now); } finally { MCLIP = false; DOTC = null; } }
+function drawDisplay0(now) {
   dctx.clearRect(0, 0, cv.width, cv.height); dctx.drawImage(bg, 0, 0);
   const t = cur(), line = S.src === 1, pos = curPos(), dur = (t && (t.dur || (isFinite(audio.duration) ? audio.duration : 0))) || 0;
   text(line ? 'LINE' : t ? (window.parent !== window ? DK : 'T') + pad2(Q.idx + 1) + '/' + pad2(Q.list.length) : 'EMPTY', 0, 0, .6);
@@ -1761,32 +1889,33 @@ function drawDisplay(now) {
     if (bs) text(bs, 42, 0, eb ? 1 : .4);
     const fl = (S.sync ? ' S' : '') + (S.q ? ' Q' : ''); if (fl && eb) text(fl.trim(), 42 + width(bs) + 6, 0, 1); }
   const md = MODES[S.mode]; text(md, COLS - width(md), 0, S.mode ? 1 : .45);
-  text(line ? '--:--' : (S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos)), 0, 9, 1, 2);
+  text(line ? '--:--' : (S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos)), 0, 9, 1);
   const vr = (SCR.active ? SCR.rate - 1 : baseRate() * nudge - 1) * 100, vs = (vr >= -.05 ? '+' : '-') + Math.abs(vr).toFixed(1) + '%';
-  text(vs, COLS - width(vs, 2), 9, .9, 2);
+  text(vs, COLS - width(vs) - 12, 9, .9);
+  drawMeter(now);
   if (helpOn) {
-    text(helpName, 0, 25, 1);
+    text(helpName, 0, 17, 1);
     const wd = width(helpDesc), cyc = wd + 40, off = Math.max(0, Math.floor((now - helpAt - 700) / 55)) % cyc;
-    text(helpDesc, 1 - off, 36, .9); if (wd > COLS) text(helpDesc, 1 - off + cyc, 36, .9);
+    text(helpDesc, 1 - off, 25, .9); if (wd > COLS) text(helpDesc, 1 - off + cyc, 25, .9);
     return;
   }
-  if (msgText && now < msgUntil) text(msgText, 0, 25, 1);
-  else if (line) text('LIVE  USE PHONES', 0, 25, .85);
-  else if (!t) text('NO DISC  TAP LIB', 0, 25, .85);
+  if (msgText && now < msgUntil) text(msgText, 0, 17, 1);
+  else if (line) text('LIVE  USE PHONES', 0, 17, .85);
+  else if (!t) text('NO DISC  TAP LIB', 0, 17, .85);
   else {
     if (!t.disp) t.disp = clean(t.name) || 'UNTITLED';
     const wpx = width(t.disp);
-    if (wpx <= COLS) text(t.disp, 0, 25, .85);
-    else { const cyc = wpx + 30, off = Math.max(0, Math.floor((now - trackStart - 1500) / 70)) % cyc; text(t.disp, -off, 25, .85); text(t.disp, -off + cyc, 25, .85); }
+    if (wpx <= COLS - 12) text(t.disp, 0, 17, .85);
+    else { const cyc = wpx + 30, off = Math.max(0, Math.floor((now - trackStart - 1500) / 70)) % cyc; text(t.disp, -off, 17, .85); text(t.disp, -off + cyc, 17, .85); }
   }
-  const y0 = 33, base = 43, frac = dur ? clamp(pos / dur, 0, 1) : 0, ph = Math.floor(frac * 139);
+  const y0 = 25, base = 33, frac = dur ? clamp(pos / dur, 0, 1) : 0, ph = Math.floor(frac * 139);
   for (let c = 0; c < 140; c++) {
     const x = 1 + c, pk = t && t.peaks ? t.peaks[c] : null, h = pk == null ? 1 : Math.max(1, Math.round(pk * 9));
     const a = c <= ph ? 1 : .32; for (let r = 0; r < h; r++) dot(x, base - r, a);
   }
   if (t && dur && effBpm(t)) {
     const p = beatLen(t), nb = dur / p, sp = 139 / nb, stepB = sp >= 3.5 ? 1 : sp * 4 >= 3.5 ? 4 : 16;
-    for (let k = Math.ceil(-t.off / p); t.off + k * p < dur; k++) { if (((k % stepB) + stepB) % stepB) continue; const x = 1 + Math.floor((t.off + k * p) / dur * 139); if (x >= 1 && x <= 140) dot(x, 32, ((k % 4) + 4) % 4 === 0 ? 1 : .5); }
+    for (let k = Math.ceil(-t.off / p); t.off + k * p < dur; k++) { if (((k % stepB) + stepB) % stepB) continue; const x = 1 + Math.floor((t.off + k * p) / dur * 139); if (x >= 1 && x <= 140) dot(x, 24, ((k % 4) + 4) % 4 === 0 ? 1 : .5); }
   }
   if (t && dur) {
     cues.forEach(c => { if (c != null) { const x = 1 + Math.floor(clamp(c / dur, 0, 1) * 139); dot(x, y0, 1); dot(x, y0 + 1, 1); } });
@@ -1805,7 +1934,7 @@ hit.addEventListener('pointerdown', e => {
   e.preventDefault(); const r = hit.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
   const xf = (e.clientX - r.left) / r.width;
   if (y < .2 && xf > .26 && xf < .7 && cur() && cur().bpm) { const t = cur(); t.bm = ((t.bm | 0) + 1) % 3; bpmStore(t); ui.msg(effBpm(t).toFixed(1) + ' BPM'); if (S.sync) syncApply(true); }
-  else if (y > .66 && cur()) { wdrag = true; try { hit.setPointerCapture(e.pointerId); } catch (_) { } waveSeek(e); }
+  else if (y > .7 && cur()) { wdrag = true; try { hit.setPointerCapture(e.pointerId); } catch (_) { } waveSeek(e); }
   else { S.tmode = S.tmode ? 0 : 1; save(); ui.msg(S.tmode ? 'REMAINING' : 'ELAPSED'); }
 });
 hit.addEventListener('pointermove', e => { if (wdrag) waveSeek(e); });
@@ -1813,12 +1942,13 @@ hit.addEventListener('pointerup', () => { wdrag = false; }); hit.addEventListene
 
 /* ================= library sheet ================= */
 const libEl = el('', chassis, ''); libEl.id = 'lib';
-libEl.innerHTML = '<div class="lh"><div class="lt">LIBRARY</div><div class="lb" data-a="add">ADD</div><div class="lb" data-a="demo">DEMO</div><div class="lb" data-a="clear">CLEAR</div><div class="lb done" data-a="done">DONE</div></div><div class="ll"></div>';
+libEl.innerHTML = '<div class="lh"><div class="lt">LIBRARY</div><div class="lb" data-a="add">ADD</div><div class="lb" data-a="goto">#</div><div class="lb" data-a="demo">DEMO</div><div class="lb" data-a="clear">CLEAR</div><div class="lb done" data-a="done">DONE</div></div><div class="ll"></div><div class="lk"><div class="lkd">TRACK --</div><div class="lkp"><div class="lb" data-a="k1">1</div><div class="lb" data-a="k2">2</div><div class="lb" data-a="k3">3</div><div class="lb" data-a="k4">4</div><div class="lb" data-a="k5">5</div><div class="lb" data-a="k6">6</div><div class="lb" data-a="k7">7</div><div class="lb" data-a="k8">8</div><div class="lb" data-a="k9">9</div><div class="lb" data-a="kc">C</div><div class="lb" data-a="k0">0</div><div class="lb done" data-a="kgo">GO</div></div></div>';
 const libList = libEl.querySelector('.ll'); libList.style.touchAction = 'pan-y';
 const fileIn = document.createElement('input'); fileIn.type = 'file'; fileIn.accept = 'audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.opus,.aif,.aiff'; fileIn.multiple = true; fileIn.style.display = 'none'; document.body.appendChild(fileIn);
 fileIn.addEventListener('change', () => { addFiles(fileIn.files); fileIn.value = ''; });
 ui.openPicker = () => fileIn.click();
-let libSeen = 0;
+let libSeen = 0, gtNum = '';
+const gtShow = () => { const d = libEl.querySelector('.lkd'); if (d) d.textContent = 'TRACK ' + (gtNum || '--') + (Q.list.length ? '  /  ' + Q.list.length : ''); };
 function libBuild() {
   libList.innerHTML = '';
   if (!Q.list.length) { libList.innerHTML = '<div class="empty">NO DISC LOADED<br>ADD AUDIO FILES FROM YOUR PHONE<br>OR LOAD THE DEMO DISC</div>'; libSeen = 0; return; }
@@ -1835,7 +1965,7 @@ function libBuild() {
 }
 function libOpen() { libBuild(); libEl.classList.add('open'); }
 function removeIdx(i) {
-  const was = i === Q.idx; Q.list.splice(i, 1);
+  const was = i === Q.idx; if (Q.list[i]) dbDel(Q.list[i].key); Q.list.splice(i, 1);
   if (!Q.list.length) { Q.idx = -1; audio.pause(); audio.removeAttribute('src'); audio.load(); cues = Array(8).fill(null); loop = { a: null, b: null, on: false }; ui.trackChanged(); ui.cuesChanged(); ui.loopChanged(); }
   else if (was) loadTrack(Math.min(i, Q.list.length - 1), false);
   else { if (i < Q.idx) Q.idx--; ui.trackChanged(true); }
@@ -1845,6 +1975,14 @@ libEl.addEventListener('click', e => {
   const a = e.target.closest('[data-a]');
   if (a) {
     const k = a.dataset.a;
+    if (k === 'goto') { libEl.classList.toggle('keys'); gtNum = ''; gtShow(); return; }
+    if (/^k[0-9c]$|^kgo$/.test(k)) {
+      if (k === 'kc') gtNum = ''; else if (k === 'kgo') {
+        const n = parseInt(gtNum, 10);
+        if (n >= 1 && n <= Q.list.length) { playIdx(n - 1); libEl.classList.remove('open', 'keys'); gtNum = ''; } else { gtNum = ''; ui.msg('NO TRACK', 1200); }
+      } else if (gtNum.length < 3) gtNum += k[1];
+      gtShow(); return;
+    }
     if (k === 'add') fileIn.click(); else if (k === 'demo') makeDemo(); else if (k === 'done') libEl.classList.remove('open');
     else if (k === 'clear') { while (Q.list.length) Q.list.pop(); Q.idx = -1; audio.pause(); audio.removeAttribute('src'); audio.load(); cues = Array(8).fill(null); loop = { a: null, b: null, on: false }; ui.trackChanged(); ui.cuesChanged(); ui.loopChanged(); libBuild(); }
     return;
@@ -1860,7 +1998,7 @@ pwr.innerHTML = '<div class="pw"><svg viewBox="0 0 24 24" fill="none" stroke-wid
 function splash() {
   const g = [];
   const put = (str, x0, y0) => { let cx0 = x0; for (const ch of str) { const gl = G[ch]; if (gl) for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (gl[r][c]) for (let u = 0; u < 2; u++) for (let v = 0; v < 2; v++) g.push([cx0 + c * 2 + u, y0 + r * 2 + v, Math.random() * COLS, Math.random() * ROWS, Math.random() * .7]); cx0 += 12; } };
-  put('IRIDESCENT', 5, 15);
+  put('IRIDESCENT', 12, 10);
   splashing = true; const t0 = performance.now();
   const skip = () => { splashing = false; window.removeEventListener('pointerdown', skip, true); };
   window.addEventListener('pointerdown', skip, true);
@@ -1885,11 +2023,12 @@ ui.varChanged = () => { const v = (baseRate() - 1) * 100; varLab.textContent = (
 ui.libBuild = libBuild;
 
 /* ================= main loop ================= */
-let last = performance.now(), lastDraw = 0;
+let last = performance.now(), lastDraw = 0, uiBusyUntil = 0, dv = 0;
 function tick(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
-  const playing = !audio.paused;
-  if (loop.on && loop.b != null && playing && audio.currentTime >= loop.b - .02) audio.currentTime = loop.a;
+  const playing = isPlaying();
+  if (loop.on && loop.b != null && playing && curPos() >= loop.b - .02) seek(loop.a);
+  if (SCR.active && playing) savePos(false);
   if (SCR.active) { if (jog.on && !jog.bend) { if (now - jog.t0 > 50) jog.vel *= .72; scrTick(dt, jog.vel); } else scrTick(dt, null); }
   if (jog.on && jog.bend) { if (now - jog.t0 > 70) jog.vel *= .8; const tg = 1 + clamp(jog.vel / 198, -2, 2) * .08; nudge += (tg - nudge) * .25; }
   else if (jog.on && playing && !SCR.active) { if (now - jog.t0 > 70) jog.vel *= .8; const tg = 1 + clamp(jog.vel / (198 * baseRate()) - 1, -1, 1) * .12; nudge += (tg - nudge) * .3; }
@@ -1897,12 +2036,16 @@ function tick(now) {
   const want = clamp(baseRate() * nudge, .25, 4);
   if (Math.abs(rateCur - want) > .0003) applyRate();
   { const tt = cur(), eb = effBpm(tt);
-    if (eb && playing) { const ph = (((audio.currentTime - tt.off) / beatLen(tt)) % 1 + 1) % 1; beatSq.style.opacity = (.3 + .7 * Math.exp(-ph * 5)).toFixed(2); beatSq.style.boxShadow = '0 0 ' + (3 + 9 * Math.exp(-ph * 5)).toFixed(1) + 'px rgba(203,74,54,.7)'; }
+    if (eb && playing) { const ph = (((curPos() - tt.off) / beatLen(tt)) % 1 + 1) % 1; beatSq.style.opacity = (.3 + .7 * Math.exp(-ph * 5)).toFixed(2); if (!beatSq.style.boxShadow) beatSq.style.boxShadow = '0 0 9px rgba(203,74,54,.7)'; }
     else if (beatSq.style.opacity) { beatSq.style.opacity = ''; beatSq.style.boxShadow = ''; } }
-  if (!jog.on || jog.bend) { if (SCR.active) discAng += 198 * SCR.rate * dt; else if (playing) discAng += 198 * audio.playbackRate * dt; }
+  if (!jog.on || jog.bend) {
+    const follow = SCR.active && !SCR.cd, tg = follow ? SCR.rate : (SCR.active ? (SCR.spinUntil ? SCR.motor : SCR.rate) : (playing ? audio.playbackRate : 0));
+    if (follow) dv = tg; else dv += (tg - dv) * (1 - Math.exp(-dt / (tg > dv ? .2 : .55)));
+    if (Math.abs(dv) < .002) dv = 0; discAng += 198 * dv * dt;
+  } else dv = SCR.active ? SCR.rate : dv;
   if (discAng !== lastAng) { cdrot.style.transform = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; lastAng = discAng; }
   const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? curPos() / d : 0);
-  if (!splashing && now - lastDraw >= 50 && !document.hidden) { lastDraw = now; drawDisplay(now); }
+  if (!splashing && now - lastDraw >= 50 && now > uiBusyUntil && !document.hidden) { lastDraw = now; drawDisplay(now); }
   requestAnimationFrame(tick);
 }
 
@@ -1973,7 +2116,7 @@ if ('mediaSession' in navigator) {
     const fin = () => { if (mp <= 1) { clearInterval(rT); rT = 0; } };
     let lastR = -1;
     const setP = (p, anim) => {
-      mp = p; if (hasMix && p > 1 && built !== P.ver) buildPage();
+      mp = p; uiBusyUntil = performance.now() + 320; if (hasMix && p > 1 && built !== P.ver) buildPage();
       const t = anim ? 'transform .24s cubic-bezier(.2,.8,.2,1)' : 'none';
       pages.forEach((n, i) => { n.style.transition = t; n.style.transform = 'translate3d(' + (Math.abs(i - p) < 1.001 || anim ? (i - p) * 500 : (i - p > 0 ? 1000 : -1000)) + 'px,0,0)'; });
       const r = Math.round(p); if (r !== lastR) { lastR = r; pdots.forEach((d, i) => d.classList.toggle('on', i === r)); }
@@ -1984,7 +2127,8 @@ if ('mediaSession' in navigator) {
     window.__mix = { set(n, instant) { n = n === true ? 2 : n === false ? 0 : n; n = Math.max(0, Math.min(NP - 1, n | 0)); if (hasMix) { P.page = n; P.open = n >= 2; } setP(n, !instant); if (hasMix && !instant) P.sync(DK); }, get open() { return mp >= 1.5; }, get page() { return Math.round(mp); } };
     setP(0, false);
     const inter = '.knob,.btn,.vfader,.cdisc,.sw,.hfader,#lib';   // the display (.dmhit) is a tap target but may start a swipe
-    const zoneOf = y => { const r = chassis.getBoundingClientRect(), u = (y - r.top) / (r.height / 1070); return u >= 648 ? 'ctl' : 'jog'; };
+    let chW = 500;
+    const zoneOf = y => { const r = chassis.getBoundingClientRect(); chW = r.width; const u = (y - r.top) / (r.height / 1070); return u >= 648 ? 'ctl' : 'jog'; };
     let sg = null, dragTo = 0, dragRaf = 0;
     window.addEventListener('pointerdown', e => {
       const t = e.target, z = zoneOf(e.clientY), btn = t.closest && t.closest('.btn');
@@ -1996,12 +2140,12 @@ if ('mediaSession' in navigator) {
       if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y;
       const kill = () => { if (sg.btn) { try { sg.btn.dispatchEvent(new PointerEvent('pointercancel', { pointerId: e.pointerId, bubbles: true })); } catch (er) { /* ignore */ } sg.btn = null; } };
       if (sg.z === 'ctl' && !sg.h && Math.abs(dx) > 10 && Math.abs(dx) > 1.3 * Math.abs(dy)) { sg.h = true; kill(); }
-      if (sg.h) { const W = chassis.getBoundingClientRect().width; dragTo = clamp(sg.o - dx / W, 0, NP - 1); if (!dragRaf) dragRaf = requestAnimationFrame(() => { dragRaf = 0; if (sg && sg.h) setP(dragTo, false); }); return; }
+      if (sg.h) { const W = chW; dragTo = clamp(sg.o - dx / W, 0, NP - 1); if (!dragRaf) dragRaf = requestAnimationFrame(() => { dragRaf = 0; if (sg && sg.h) setP(dragTo, false); }); return; }
       if (sg.btn && Math.abs(dy) > 24 && Math.abs(dy) > 1.6 * Math.abs(dx)) kill();
     }, true);
     window.addEventListener('pointerup', e => {
       if (!sg || e.pointerId !== sg.id) return; const dx = e.clientX - sg.x, dy = e.clientY - sg.y, z = sg.z, dm = sg.dm, hh = sg.h, o = sg.o; sg = null;
-      if (hh) { const W = chassis.getBoundingClientRect().width, mvd = -dx / W; window.__mix.set(Math.abs(mvd) > .15 ? Math.round(o) + (mvd > 0 ? 1 : -1) : Math.round(o)); return; }
+      if (hh) { const W = chW, mvd = -dx / W; window.__mix.set(Math.abs(mvd) > .15 ? Math.round(o) + (mvd > 0 ? 1 : -1) : Math.round(o)); return; }
       if (z === 'jog' && Math.abs(dx) > 60 && Math.abs(dx) > 1.6 * Math.abs(dy)) { if (!hasMix) return; if (dm) e.stopImmediatePropagation(); P.swipe(dx < 0 ? 'B' : 'A'); }
       else if (z === 'ctl' && Math.abs(dy) > 40 && Math.abs(dy) > 1.4 * Math.abs(dx)) window.__mix.set(Math.round(mp) + (dy < 0 ? 1 : -1));
     }, true);
@@ -2026,7 +2170,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('dragover', e => e.preventDefault());
 window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !audio.paused) wakeOn(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && isPlaying()) wakeOn(); });
 function drawIcon(S) {
   const c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'); g.scale(S / 180, S / 180);
   const bg = g.createLinearGradient(0, 0, 180, 180); bg.addColorStop(0, '#eceef1'); bg.addColorStop(1, '#d9dce1'); g.fillStyle = bg; g.fillRect(0, 0, 180, 180);
@@ -2064,6 +2208,17 @@ fit();
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', () => setTimeout(fit, 120));
 ui.cuesChanged(); ui.loopChanged(); ui.playState(false); ui.varChanged();
+(async () => {   // bring the saved shelf back
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignore */ }
+  const rows = (await dbAll()).sort((a, b) => a.seq - b.seq); if (!rows.length) return;
+  rows.forEach(r => {
+    if (!r.file || Q.list.some(t => t.key === r.key)) return;
+    const item = { file: r.file, name: r.name, key: r.key, dur: r.dur || 0, peaks: null, seq: r.seq }; Q.list.push(item);
+    if (!item.dur) { try { const a = new Audio(), u = URL.createObjectURL(r.file); a.preload = 'metadata'; a.onloadedmetadata = () => { if (isFinite(a.duration)) { item.dur = a.duration; dbPut(item); } URL.revokeObjectURL(u); ui.libBuild(); }; a.onerror = () => URL.revokeObjectURL(u); a.src = u; } catch (e) { /* ignore */ } }
+  });
+  if (Q.idx < 0 && Q.list.length) { let lk = null; try { lk = localStorage.getItem('iridescent.last'); } catch (e) { /* ignore */ } loadTrack(Math.max(0, Q.list.findIndex(t => t.key === lk)), false); }
+  ui.libBuild();
+})();
 requestAnimationFrame(tick);
 
 })();
