@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.33
+- Disc loading is back on the original insert sound; the new eject and the new clicks stay.
+
+## 1.0.32
+- New key clicks: left and right variants, alternating on each key press.
+- New eject sound. Drive spin-up on PLAY and the hum are unchanged.
+
 ## 1.0.31
 - Clean-up: the click helper is simplified now that pads, key release and the switches are silent; unused CSS removed (`.led.cuep`, `.led.loopp`, `#lib .lf`). No unused functions or variables found.
 
@@ -43,8 +50,8 @@
 - The red mark on the drive slider and the red stripe on the deck are removed.
 
 ## 1.0.18
-- Recorded drive sounds from your samples: disc drop and spin-up, eject of the previous disc, spin-up on PLAY, a quiet drive hum while playing, and sampled key/switch clicks. All gated by the CLICKS toggle (long press LIB). The synthesised sounds stay as a fallback until the clips are decoded.
-- Clips are short mono mp3 (about 45 KB in total) embedded in index.html. Sources: freesound_community / audiopapkin (Pixabay).
+- Recorded drive sounds: disc drop and spin-up, eject of the previous disc, spin-up on PLAY, a quiet drive hum while playing, and sampled key/switch clicks. All gated by the CLICKS toggle (long press LIB). The synthesised sounds stay as a fallback until the clips are decoded.
+- Clips are short mono mp3 (about 45 KB in total) embedded in index.html.
 
 ## 1.0.17
 
