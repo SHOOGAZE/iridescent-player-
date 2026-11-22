@@ -928,17 +928,29 @@ function trackEnd() {
 function seek(t) {
   if (SCR.active) { SCR.pos = clamp(t, 0, Math.max(0, SCR.buf.duration - .05)); SCR.restart = true; return; } const d = audio.duration; if (!isFinite(d) || !cur()) return; audio.currentTime = clamp(t, 0, Math.max(0, d - .05)); }
 function seekBy(d) { seek(curPos() + d); }
-function playIdx(i) { loadTrack(i, true); }
+function playIdx(i) { swapTrack(i, true); }
 function nextIdx(auto) {
   const n = Q.list.length; if (!n) return -1;
   if (S.mode === 3 && n > 1) { let j; do { j = Math.floor(Math.random() * n); } while (j === Q.idx); return j; }
   if (Q.idx + 1 < n) return Q.idx + 1;
   return (auto && S.mode !== 2) ? -1 : 0;
 }
-function next() { const j = nextIdx(false); if (j < 0) return; if (mixRequest(j)) return; loadTrack(j, isPlaying()); }
+let swapTok = 0;
+function swapTrack(j, play) {   // manual change while playing: the sound fades out under the shutter, the new disc fades in as it opens
+  if (j < 0 || j >= Q.list.length) return;
+  if (!play || !ctx || !E || !E.vol || ctx.state !== 'running' || !isPlaying() || matchMedia('(prefers-reduced-motion: reduce)').matches) { loadTrack(j, play); return; }
+  const tok = ++swapTok, g = E.vol.gain, n = ctx.currentTime;
+  try { g.cancelScheduledValues(n); g.setValueAtTime(g.value, n); g.linearRampToValueAtTime(0, n + .18); } catch (e) { /* ignore */ }
+  setTimeout(() => {
+    if (tok !== swapTok) return;
+    loadTrack(j, true);
+    try { const m = ctx.currentTime, v = S.vol * S.vol * 1.2; g.cancelScheduledValues(m); g.setValueAtTime(0, m); g.linearRampToValueAtTime(v, m + .5); } catch (e) { /* ignore */ }
+  }, 200);
+}
+function next() { const j = nextIdx(false); if (j < 0) return; if (mixRequest(j)) return; swapTrack(j, isPlaying()); }
 function prev() {
   if (curPos() > 3 || Q.idx <= 0) { seek(0); return; }
-  loadTrack(Q.idx - 1, isPlaying());
+  swapTrack(Q.idx - 1, isPlaying());
 }
 
 
@@ -961,14 +973,16 @@ const eqIn = k => Math.sin(k * Math.PI / 2), eqOut = k => Math.cos(k * Math.PI /
 function fadeSteps(prm, t0, d, fn) { const n = 32; prm.setValueAtTime(fn(0), t0); for (let i = 1; i <= n; i++) prm.linearRampToValueAtTime(fn(i / n), t0 + d * i / n); }
 function mixReady(j) { const t = Q.list[j]; return !!(t && t.buf && SCR.active && SCR.wasPlaying && !SCR.hand && !SCR.search && !jog.on && !MIX && cur() && cur().buf); }
 async function mixPre(t) {   // decode the next disc ahead of time (plus its tempo)
-  if (t.buf || t.preBusy || t.nopk) return; t.preBusy = true;
+  if (t.buf || t.preBusy || t.nopk || t.nomix) return; t.preBusy = true;
   try {
-    if (t.file.size > 80e6) throw new Error('big'); initAudio();
+    // iOS kills the page when two long decoded tracks sit in memory: skip the prefetch (plain change instead of a mix) for heavy pairs
+    const est = x => (x.buf ? x.buf.length * x.buf.numberOfChannels * 4 : (x.dur || 0) * 48000 * 2 * 4), c0 = cur();
+    if (t.file.size > 40e6 || est(t) > 90e6 || (!t.dur && t.file.size > 12e6) || (c0 && est(c0) + est(t) > 170e6)) { t.nomix = true; throw new Error('big'); } initAudio();
     const ab = await t.file.arrayBuffer();
     const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); });
     if (Q.list.indexOf(t) < 0) return; scrKeep(t, buf);
     if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; t.conf = c[3]; } else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
-  } catch (e) { t.nopk = true; }
+  } catch (e) { if (!t.nomix) t.nopk = true; }
   t.preBusy = false;
 }
 function mixStart(j, D) {
@@ -1022,11 +1036,11 @@ function mixInterrupt() { if (!MIX) return; if (ctx.currentTime < MIX.T0) mixAbo
 let mixReq = 0;
 function mixRequest(j) {   // NEXT while playing: the disc comes in on the beat instead of a hard cut
   if (!S.mix || !BUFENG || !SCR.active || !SCR.wasPlaying || MIX || mixReq) return false;
-  const t = Q.list[j]; if (!t || !cur() || !cur().buf || t.nopk) return false;
-  const go = () => { if (!mixStart(j, Math.min(S.mix, 8))) loadTrack(j, isPlaying()); };
+  const t = Q.list[j]; if (!t || !cur() || !cur().buf || t.nopk || t.nomix) return false;
+  const go = () => { if (!mixStart(j, Math.min(S.mix, 8))) swapTrack(j, isPlaying()); };
   if (t.buf) { go(); return true; }
   mixReq = 1; ui.msg('MIX LOADING', 1500);
-  mixPre(t).then(() => { mixReq = 0; if (Q.list[Q.idx + 1] === t || Q.list.indexOf(t) >= 0) { if (t.buf && SCR.active && SCR.wasPlaying) go(); else loadTrack(j, isPlaying()); } });
+  mixPre(t).then(() => { mixReq = 0; if (Q.list[Q.idx + 1] === t || Q.list.indexOf(t) >= 0) { if (t.buf && SCR.active && SCR.wasPlaying) go(); else swapTrack(j, isPlaying()); } });
   return true;
 }
 function mixWatch() {
