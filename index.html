@@ -22,7 +22,7 @@ html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-beh
 #glow{display:none;position:fixed;inset:-18%;pointer-events:none;opacity:0;filter:blur(90px) saturate(1.25);transition:opacity 1.2s ease,background 1.2s ease}
 #turn{position:fixed;left:max(14px,calc(env(safe-area-inset-left) + 10px));top:14px;z-index:90;display:none;padding:7px 14px;border-radius:99px;background:rgba(20,22,26,.78);border:1px solid rgba(255,255,255,.18);color:#e9ecef;font:700 10px/1 'SF Mono',ui-monospace,Menlo,monospace;letter-spacing:.14em;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #desk{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#1d1f24 0%,#0b0c0e 60%,#040405 100%)}
-#stage{position:absolute;left:0;top:0;width:1000px;height:500px;transform-origin:0 0;will-change:transform}
+#stage{position:absolute;left:0;top:0;width:1000px;height:500px;transform-origin:0 0}
 
 /* body: frosted plastic over a PCB, chrome rim */
 #chassis{position:absolute;inset:0;border-radius:18px;overflow:hidden;background:#d5d9de;
@@ -245,10 +245,9 @@ html.lite .knob.st .krot{transition:none}
 .hubbtn.down{transform:scale(.96)}
 .spn{position:absolute;inset:0;pointer-events:none}
 .spn svg{width:100%;height:100%;fill:none;filter:none}
-.cdlid{position:absolute;border-radius:50%;overflow:hidden;z-index:7;pointer-events:none}
+.cdlid{visibility:hidden;position:absolute;border-radius:50%;overflow:hidden;z-index:7;pointer-events:none}
 .lidp{position:absolute;inset:-2px;transform:translateX(-110%);
-  background:linear-gradient(115deg,rgba(246,248,250,.82),rgba(214,220,227,.74) 55%,rgba(238,241,244,.84));
-  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  background:linear-gradient(115deg,rgba(248,250,252,.93),rgba(218,224,230,.9) 55%,rgba(240,243,246,.94));
   clip-path:polygon(0 0,100% 0,100% 100%,22% 100%,0 78%);
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.9),inset 0 -10px 18px rgba(120,132,146,.28);will-change:transform}
 .lidp::after{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95));}
@@ -1238,17 +1237,17 @@ function setCover(t, keep) {
     if (firstCover || !disc.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { firstCover = false; face(); return; }
     // frosted shutter slides over the disc, the label changes underneath, the shutter leaves
     if (!lidp.animate) { face(); return; }
-    if (lidBusy) { lidBusy.cancel(); lidBusy = null; face(); return; }
-    const ease = 'cubic-bezier(.4,0,.2,1)';
+    if (lidBusy) { lidBusy.cancel(); lidBusy = null; lid.style.visibility = ''; face(); return; }
+    const ease = 'cubic-bezier(.4,0,.2,1)'; lid.style.visibility = 'visible';
     const a1 = lidp.animate([{ transform: 'translateX(-110%)' }, { transform: 'translateX(0)' }], { duration: 230, easing: ease, fill: 'forwards' });
     lidBusy = a1;
     a1.onfinish = () => {
-      if (tok !== coverTok) { a1.cancel(); lidBusy = null; return; }
+      if (tok !== coverTok) { a1.cancel(); lidBusy = null; lid.style.visibility = ''; return; }
       face();
       const wl = document.querySelector('.cdwell'); if (wl) { wl.classList.remove('land'); void wl.offsetWidth; wl.classList.add('land'); }
       setTimeout(() => {
         const a2 = lidp.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(110%)' }], { duration: 300, easing: ease, fill: 'forwards' });
-        lidBusy = a2; a2.onfinish = () => { a2.cancel(); a1.cancel(); lidBusy = null; };
+        lidBusy = a2; a2.onfinish = () => { a2.cancel(); a1.cancel(); lidBusy = null; lid.style.visibility = ''; };
       }, 140);
     };
   } catch (e) { try { cdrot.style.background = coverBg(t.key); drawLabel(t); } catch (_) { /* ignore */ } }
