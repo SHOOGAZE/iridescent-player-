@@ -682,6 +682,7 @@ function applyRate(snap) {   // the element's speed follows the target in small 
 const BUFENG = (() => { try { return location.hash.indexOf('nobuf') < 0 && localStorage.getItem('iridescent.buf') !== '0'; } catch (e) { return true; } })();
 const SPIN_MS = 520;   // a CD player: the disc spins up first, the sound starts when it is at speed; stopping cuts the sound at once (no pitch fall - that is for tapes), the disc keeps turning for a moment
 if (S.cdspin === undefined) S.cdspin = 1;
+if (S.mix === undefined) S.mix = 0;   // automix: 0 off, else crossfade seconds
 const stayBuf = () => BUFENG && !!SCR.buf && (!S.lock || wsolaOK());
 function engState(p) { if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
 const scrOK = () => S.scr && cur() && cur().buf;
@@ -697,6 +698,7 @@ function doPlay() {
   rawPlay();
 }
 function doPause() {
+  if (MIX) mixInterrupt();
   if (SCR.active) { SCR.wasPlaying = false; SCR.spinUntil = 0; if (!jog.on) { SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } } engState(false); return; }
   if (scrOK() && !audio.paused) { scrBegin(true, audio.playbackRate); SCR.wasPlaying = false; SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } return; }
   audio.pause();
@@ -867,6 +869,7 @@ function scrFinishHard(play) {
 }
 function scrTick(dt, vel) {
   const dur = SCR.buf.duration;
+  if (MIX && (vel !== null || SCR.search || !SCR.wasPlaying || SCR.hand)) mixInterrupt();
   if (vel === null && SCR.spinUntil) { if (performance.now() >= SCR.spinUntil) { SCR.spinUntil = 0; SCR.rate = SCR.motor; } else SCR.rate = 0; }
   else if (vel === null) { const tg = SCR.motor, tau = SCR.search ? .14 : (tg !== 0 ? (Math.abs(SCR.rate - tg) < .12 ? .045 : .16) : .5); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / tau)); if (tg === 0) SCR.rate -= Math.sign(SCR.rate) * Math.min(Math.abs(SCR.rate), .25 * dt); }
   else { SCR.spinUntil = 0; SCR.cd = false; const tg = clamp(vel / 198, -6, 6); SCR.rate += (tg - SCR.rate) * (1 - Math.exp(-dt / .022)); }
@@ -880,7 +883,7 @@ function scrTick(dt, vel) {
   SCR.ng.gain.setTargetAtTime(Math.min(.03, Math.abs(SCR.rate) * .014) * (dir ? 1 : 0), ctx.currentTime, .015);
   if (SCR.hand) { if ((jog.on && !jog.bend) || SCR.search || !SCR.wasPlaying || SCR.motor <= 0) handAbort(); else handCheck(); if (!SCR.active) return; }
   if (vel === null && !SCR.search && !SCR.hand && SCR.wasPlaying && stayBuf()) {   // stay on the buffer: varispeed is just the node's playbackRate
-    if (SCR.pos >= dur - .06) { trackEnd(); return; }
+    if (SCR.pos >= dur - .06) { if (MIX) mixInterrupt(); else trackEnd(); return; }
     SCR.motor = clamp(baseRate() * nudge, .25, 4);
     if (nd && Math.abs(SCR.rate - SCR.motor) < .03 && ((S.lock && !nd.w) || (!S.lock && nd.w))) SCR.restart = true;
     return;
@@ -905,10 +908,106 @@ function nextIdx(auto) {
   if (Q.idx + 1 < n) return Q.idx + 1;
   return (auto && S.mode !== 2) ? -1 : 0;
 }
-function next() { const j = nextIdx(false); if (j >= 0) loadTrack(j, isPlaying()); }
+function next() { const j = nextIdx(false); if (j < 0) return; if (mixRequest(j)) return; loadTrack(j, isPlaying()); }
 function prev() {
   if (curPos() > 3 || Q.idx <= 0) { seek(0); return; }
   loadTrack(Q.idx - 1, isPlaying());
+}
+
+
+function discSnd() {   // a disc dropped into the tray: a soft clunk, a short spin-up whirr, a latch
+  try {
+    if (!ctx || ctx.state !== 'running') return;
+    const t = ctx.currentTime + .01, o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(70, t + .06); o.frequency.exponentialRampToValueAtTime(240, t + .5); f.type = 'lowpass'; f.frequency.value = 520; f.Q.value = .6;
+    g.gain.setValueAtTime(0, t + .06); g.gain.linearRampToValueAtTime(.012, t + .2); g.gain.exponentialRampToValueAtTime(.0001, t + .62);
+    o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(t + .06); o.stop(t + .66);
+    const k = ctx.createOscillator(), kg = ctx.createGain(); k.type = 'sine'; k.frequency.setValueAtTime(120, t); k.frequency.exponentialRampToValueAtTime(48, t + .09);
+    kg.gain.setValueAtTime(0, t); kg.gain.linearRampToValueAtTime(.09, t + .003); kg.gain.exponentialRampToValueAtTime(.0001, t + .11); k.connect(kg); kg.connect(ctx.destination); k.start(t); k.stop(t + .13);
+    const l = ctx.createOscillator(), lg = ctx.createGain(); l.type = 'triangle'; l.frequency.value = 1900;
+    lg.gain.setValueAtTime(0, t + .52); lg.gain.linearRampToValueAtTime(.02, t + .523); lg.gain.exponentialRampToValueAtTime(.0001, t + .545); l.connect(lg); lg.connect(ctx.destination); l.start(t + .52); l.stop(t + .56);
+  } catch (e) { /* ignore */ }
+}
+/* ================= automix: the next disc comes in on the beat grid while the old one fades out ================= */
+let MIX = null;
+const eqIn = k => Math.sin(k * Math.PI / 2), eqOut = k => Math.cos(k * Math.PI / 2);
+function fadeSteps(prm, t0, d, fn) { const n = 32; prm.setValueAtTime(fn(0), t0); for (let i = 1; i <= n; i++) prm.linearRampToValueAtTime(fn(i / n), t0 + d * i / n); }
+function mixReady(j) { const t = Q.list[j]; return !!(t && t.buf && SCR.active && SCR.wasPlaying && !SCR.hand && !SCR.search && !jog.on && !MIX && cur() && cur().buf); }
+async function mixPre(t) {   // decode the next disc ahead of time (plus its tempo)
+  if (t.buf || t.preBusy || t.nopk) return; t.preBusy = true;
+  try {
+    if (t.file.size > 80e6) throw new Error('big'); initAudio();
+    const ab = await t.file.arrayBuffer();
+    const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); });
+    if (Q.list.indexOf(t) < 0) return; scrKeep(t, buf);
+    if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; } else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
+  } catch (e) { t.nopk = true; }
+  t.preBusy = false;
+}
+function mixStart(j, D) {
+  if (!mixReady(j)) return false;
+  const c = cur(), t = Q.list[j], now = ctx.currentTime, rC = Math.abs(SCR.rate) > .05 ? SCR.rate : baseRate(), bc = effBpm(c), bn = effBpm(t);
+  let rIn = rC, synced = false, pIn = 0, wait = .03;
+  if (bc && bn) {
+    let r = null; const need = bc * rC / bn;
+    [need, need * 2, need / 2].forEach(x => { if (Math.abs(x - 1) <= .16 && (r === null || Math.abs(x - 1) < Math.abs(r - 1))) r = x; });
+    if (S.sync && r !== null) {
+      rIn = r; synced = true;
+      const Lc = 60 / bc, Ln = 60 / bn, pc = SCR.pos + rC * (now - (SCR.c || now)), ph = (((pc - c.off) / Lc) % 1 + 1) % 1;
+      wait = ph < .02 ? 0 : (1 - ph) * Lc / rC; if (wait < .08) wait += Lc / rC;
+      pIn = ((t.off % Ln) + Ln) % Ln;
+    }
+  }
+  const remain = (SCR.buf.duration - SCR.pos) / Math.max(.25, rC) - wait - .15; D = Math.min(D, remain);
+  if (D < 1) return false;
+  const T0 = now + wait, mg = ctx.createGain(), s = ctx.createBufferSource();
+  s.buffer = t.buf; s.playbackRate.value = rIn; s.connect(mg); mg.connect(E.bus);
+  mg.gain.setValueAtTime(0, now); fadeSteps(mg.gain, T0, D, eqIn);
+  const og = SCR.out.gain; og.cancelScheduledValues(now); og.setValueAtTime(1, now); fadeSteps(og, T0, D, eqOut);
+  s.start(T0, clamp(pIn, 0, t.buf.duration - .1));
+  MIX = { j, t, T0, D, s, mg, rIn, pIn, synced, old: SCR.node };
+  setTimeout(() => { if (MIX && MIX.t === t) ui.msg('MIX ' + t.name.replace(/\.[^.]+$/, ''), Math.min(D, 4) * 1000); }, wait * 1000);
+  return true;
+}
+function mixFinish() {   // hand the deck over to the new disc (normal end, or cut short by the user)
+  const m = MIX; if (!m) return; MIX = null; const n = ctx.currentTime, k = clamp((n - m.T0) / m.D, 0, 1);
+  const gi = m.mg.gain, go = SCR.out.gain;
+  gi.cancelScheduledValues(n); gi.setValueAtTime(eqIn(k), n); gi.linearRampToValueAtTime(1, n + .04);
+  go.cancelScheduledValues(n); go.setValueAtTime(eqOut(k), n); go.linearRampToValueAtTime(0, n + .04);
+  const pos = m.pIn + m.rIn * Math.max(0, n - m.T0), old = m.old;
+  if (m.synced && effBpm(cur())) MASTER = effBpm(cur()) * (Math.abs(SCR.rate) > .05 ? SCR.rate : baseRate());
+  loadTrack(m.j, false, { sync: m.synced });
+  SCR.buf = m.t.buf; SCR.rev = null; SCR.pos = pos; SCR.rate = m.rIn; SCR.c = n; SCR.node = { s: m.s, g: m.mg, dir: 1 }; SCR.wasPlaying = true; SCR.restart = false;
+  SCR.motor = clamp(baseRate() * nudge, .25, 4); SCR.active = true;
+  setTimeout(() => {
+    try { if (old) old.s.stop(); } catch (e) { /* ignore */ }
+    const t2 = ctx.currentTime; go.cancelScheduledValues(t2); go.setValueAtTime(1, t2);
+    try { m.mg.disconnect(); m.mg.connect(SCR.out); } catch (e) { /* ignore */ }
+  }, 70);
+}
+function mixAbort() {   // the user went elsewhere before the new disc came in
+  const m = MIX; if (!m) return; MIX = null; const n = ctx.currentTime;
+  try { m.mg.gain.cancelScheduledValues(n); m.mg.gain.setTargetAtTime(0, n, .01); m.s.stop(n + .05); } catch (e) { /* ignore */ }
+  const go = SCR.out.gain; go.cancelScheduledValues(n); go.setValueAtTime(go.value, n); go.linearRampToValueAtTime(1, n + .03);
+}
+function mixInterrupt() { if (!MIX) return; if (ctx.currentTime < MIX.T0) mixAbort(); else mixFinish(); }
+let mixReq = 0;
+function mixRequest(j) {   // NEXT while playing: the disc comes in on the beat instead of a hard cut
+  if (!S.mix || !BUFENG || !SCR.active || !SCR.wasPlaying || MIX || mixReq) return false;
+  const t = Q.list[j]; if (!t || !cur() || !cur().buf || t.nopk) return false;
+  const go = () => { if (!mixStart(j, Math.min(S.mix, 8))) loadTrack(j, isPlaying()); };
+  if (t.buf) { go(); return true; }
+  mixReq = 1; ui.msg('MIX LOADING', 1500);
+  mixPre(t).then(() => { mixReq = 0; if (Q.list[Q.idx + 1] === t || Q.list.indexOf(t) >= 0) { if (t.buf && SCR.active && SCR.wasPlaying) go(); else loadTrack(j, isPlaying()); } });
+  return true;
+}
+function mixWatch() {
+  if (MIX) { if (ctx.currentTime >= MIX.T0 + MIX.D) mixFinish(); return; }
+  if (!S.mix || !BUFENG || S.mode === 1 || !SCR.active || !SCR.wasPlaying || SCR.hand || SCR.search || jog.on || mixReq || !SCR.buf) return;
+  const j = nextIdx(true); if (j < 0) return;
+  const t = Q.list[j], rem = (SCR.buf.duration - SCR.pos) / Math.max(.25, SCR.rate);
+  if (rem < 45 && !t.buf) mixPre(t);
+  else if (t.buf && rem < S.mix + 3 && rem > .5) mixStart(j, S.mix);
 }
 audio.addEventListener('timeupdate', () => savePos(false));
 audio.addEventListener('ended', () => {
@@ -928,15 +1027,17 @@ function saveCues() {
   const t = cur(); if (!t) return;
   try { const o = JSON.parse(localStorage.getItem(CK)) || {}; o[t.key] = cues; const ks = Object.keys(o); if (ks.length > 60) delete o[ks[0]]; localStorage.setItem(CK, JSON.stringify(o)); } catch (e) { /* ignore */ }
 }
-function loadTrack(i, play) {
+function loadTrack(i, play, keep) {
   if (i < 0 || i >= Q.list.length) return;
+  if (MIX && !keep) mixAbort();
   if (!S.sync && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate();
   Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) x.buf = null; });
-  if (SCR.active) { scrStop(); SCR.hand = null; SCR.active = false; SCR.search = false; SCR.wasPlaying = false; if (SCR.ng) SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02); if (E && E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); } }
+  if (SCR.active && !keep) { scrStop(); SCR.hand = null; SCR.active = false; SCR.search = false; SCR.wasPlaying = false; if (SCR.ng) SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02); if (E && E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); } }
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; ppCur = null; audio.load();
   cues = loadCues(t.key); loop = { a: null, b: null, on: false, auto: false }; mainCue = 0; slip = null; try { localStorage.setItem('iridescent.last', t.key); } catch (e) { /* ignore */ }
-  applyRate(); setCover(t); resumePos(t); if (S.sync && t.bpm) syncApply(true);
+  applyRate(); setCover(t); if (!keep) resumePos(t); if (S.sync && t.bpm && (!keep || keep.sync)) syncApply(true);
+  if (!keep) discSnd();
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
   if (!t.peaks && !t.nopk) computePeaks(t);
   if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: 'IRIDESCENT' }); } catch (e) { /* ignore */ } }
@@ -1194,8 +1295,7 @@ async function computePeaks(t) {
   try {
     if (t.file.size > 110e6) throw new Error('big');
     initAudio();
-    const ab = await t.file.arrayBuffer();
-    const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); });
+    const buf = t.buf || await new Promise(async (res, rej) => { try { const ab = await t.file.arrayBuffer(); const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); } catch (e) { rej(e); } });
     const n = 140, pk = new Float32Array(n), len = buf.length, step = len / n;
     for (let c = 0; c < Math.min(2, buf.numberOfChannels); c++) {
       const d = buf.getChannelData(c), st = Math.max(1, Math.floor(step / 96));
@@ -1511,7 +1611,10 @@ let syLong = false, syTo = 0;
 mkBtn({ x: fx(4), y: fy(4), w: FW, h: FH, cls: 'dark', text: 'SYNC',
   down: () => { syLong = false; syTo = setTimeout(() => { syLong = true; S.q = S.q ? 0 : 1; save(); ui.msg('QUANTIZE ' + (S.q ? 'ON' : 'OFF')); }, 600); },
   up: (e, c) => { clearTimeout(syTo); if (c || syLong) return; syncToggle(); } });
-mkBtn({ x: fx(5), y: fy(5), w: FW, h: FH, cls: 'grey', text: 'MODE', up: (e, c) => { if (c) return; S.mode = (S.mode + 1) % 4; save(); ui.msg('MODE ' + MODES[S.mode]); } });
+let mdTo = 0, mdLong = false;
+mkBtn({ x: fx(5), y: fy(5), w: FW, h: FH, cls: 'grey', text: 'MODE',
+  down: () => { mdLong = false; mdTo = setTimeout(() => { mdLong = true; const L = [0, 4, 8, 16]; S.mix = L[(L.indexOf(S.mix) + 1) % 4]; save(); ui.msg(S.mix ? 'AUTOMIX ' + S.mix + 'S' : 'AUTOMIX OFF', 1500); }, 600); },
+  up: (e, c) => { clearTimeout(mdTo); if (c || mdLong) return; S.mode = (S.mode + 1) % 4; save(); ui.msg('MODE ' + MODES[S.mode]); } });
 const ledLock = led(fc(6), fy(6) - 12, S.lock ? 'on' : '');
 mkBtn({ x: fx(6), y: fy(6), w: FW, h: FH, text: 'LOCK', up: (e, c) => { if (c) return; S.lock = S.lock ? 0 : 1; save(); applyRate(); ledLock.classList.toggle('on', !!S.lock); ui.msg('PITCH LOCK ' + (S.lock ? 'ON' : 'OFF')); } });
 const ledA = led(fc(1), fy(1) - 12, ''), ledB = led(fc(2), fy(2) - 12, ''), ledLoop = led(fc(3), fy(3) - 12, '');
@@ -1789,7 +1892,7 @@ function drawDisplay0(now) {
   { const eb = effBpm(t); let bs = '';
     if (t) bs = eb ? eb.toFixed(1) + 'BPM' : (t.nopk ? '' : '---BPM');
     if (bs) text(bs, 42, 0, eb ? 1 : .4);
-    const fl = (S.sync ? ' S' : '') + (S.q ? ' Q' : ''); if (fl && eb) text(fl.trim(), 42 + width(bs) + 6, 0, 1); }
+    const fl = (S.sync ? ' S' : '') + (S.q ? ' Q' : '') + (S.mix ? ' X' : ''); if (fl && eb) text(fl.trim(), 42 + width(bs) + 6, 0, 1); }
   const md = MODES[S.mode]; text(md, COLS - width(md), 0, S.mode ? 1 : .45);
   text(S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos), 0, 9, 1);
   const vr = (SCR.active ? SCR.rate - 1 : baseRate() * nudge - 1) * 100, vs = (vr >= -.05 ? '+' : '-') + Math.abs(vr).toFixed(1) + '%';
@@ -1952,6 +2055,7 @@ function step(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   { const ip = !!isPlaying(); if (ip !== hissOn) { hissOn = ip; applyFxSoon(); } }
   const playing = isPlaying();
+  mixWatch();
   if (loop.on && loop.b != null && playing && curPos() >= loop.b - .02) seek(loop.a);
   if (SCR.active && playing) savePos(false);
   if (SCR.active) { if (jog.on && !jog.bend) { if (now - jog.t0 > 50) jog.vel *= .72; scrTick(dt, jog.vel); } else scrTick(dt, null); }
@@ -2092,7 +2196,6 @@ function drawIcon(S) {
   };
   if (!needAsk && D) enable();
   disc.addEventListener('pointerup', ask, true); disc.addEventListener('click', ask, true);
-  window.__tilt = onOri;
 }
 /* ================= boot ================= */
 /* ================= landscape (phones): a viewing mode ================= */
