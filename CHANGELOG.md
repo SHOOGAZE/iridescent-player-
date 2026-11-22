@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.24
+- The old synthesised UI and disc sounds are removed; everything now plays from the recorded clips (pads and key release use the same click at other pitches). The clips are decoded as soon as audio starts.
+
+## 1.0.23
+- Lighter idle: while paused and nothing moves, the main loop runs about 20 steps a second instead of 60. A touch, a message, HELP, play or any motion wakes it at once.
+
 ## 1.0.22
 - Accessibility: roles and labels on buttons, pads, transport, switches (CRUSH, FILTER), the VARISPEED slider and the display.
 - Page zoom allowed again (`user-scalable=no` removed; the player itself still ignores touch gestures).
