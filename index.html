@@ -685,6 +685,7 @@ function applyFx() {
   if (!E) return;
   const t = ctx.currentTime;
   const P = (prm, val, tc) => { if (fxLast.get(prm) === val) return; fxLast.set(prm, val); prm.setTargetAtTime(val, t, tc); };   // only parameters that really changed reach the audio thread
+  if (!swapBusy && E.vol.gain.value < .01) fxLast.delete(E.vol.gain);   // safety: the master level can never stay muted after a disc change
   P(E.vol.gain, S.vol * S.vol * 1.2, .04);
   if (E.crB) { const a = S.crush; P(E.crB, 16 - a * 9, .02); P(E.crH, 1 + a * a * 7, .02); }
   const fq = filtHz(S.filt); P(E.fl.frequency, fq.lp, .05); P(E.fh.frequency, fq.hp, .05); P(E.fl.Q, fq.q, .05); P(E.fh.Q, fq.q, .05);
@@ -935,16 +936,17 @@ function nextIdx(auto) {
   if (Q.idx + 1 < n) return Q.idx + 1;
   return (auto && S.mode !== 2) ? -1 : 0;
 }
-let swapTok = 0;
+let swapTok = 0, swapBusy = false;
 function swapTrack(j, play) {   // manual change while playing: the sound fades out under the shutter, the new disc fades in as it opens
   if (j < 0 || j >= Q.list.length) return;
   if (!play || !ctx || !E || !E.vol || ctx.state !== 'running' || !isPlaying() || matchMedia('(prefers-reduced-motion: reduce)').matches) { loadTrack(j, play); return; }
-  const tok = ++swapTok, g = E.vol.gain, n = ctx.currentTime;
+  const tok = ++swapTok, g = E.vol.gain, n = ctx.currentTime; swapBusy = true;
   try { g.cancelScheduledValues(n); g.setValueAtTime(g.value, n); g.linearRampToValueAtTime(0, n + .18); } catch (e) { /* ignore */ }
   setTimeout(() => {
     if (tok !== swapTok) return;
     loadTrack(j, true);
     try { const m = ctx.currentTime, v = S.vol * S.vol * 1.2; g.cancelScheduledValues(m); g.setValueAtTime(0, m); g.linearRampToValueAtTime(v, m + .5); } catch (e) { /* ignore */ }
+    setTimeout(() => { if (tok === swapTok) { swapBusy = false; try { const m = ctx.currentTime; g.cancelScheduledValues(m); g.setValueAtTime(S.vol * S.vol * 1.2, m); } catch (e) { /* ignore */ } } }, 700);
   }, 200);
 }
 function next() { const j = nextIdx(false); if (j < 0) return; if (mixRequest(j)) return; swapTrack(j, isPlaying()); }
@@ -981,7 +983,7 @@ async function mixPre(t) {   // decode the next disc ahead of time (plus its tem
     const ab = await t.file.arrayBuffer();
     const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); });
     if (Q.list.indexOf(t) < 0) return; scrKeep(t, buf);
-    if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; t.conf = c[3]; } else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
+    if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; t.conf = c[3]; } else { const an = await analyzeBpm(buf); if (an && cur() === t) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
   } catch (e) { if (!t.nomix) t.nopk = true; }
   t.preBusy = false;
 }
@@ -1081,7 +1083,7 @@ function loadTrack(i, play, keep) {
   applyRate(); setCover(t, !!keep); if (!keep) resumePos(t); if (S.sync && t.bpm && (!keep || keep.sync)) syncApply(true);
   if (!keep) { setTimeout(discSnd, 200); ui.msg('LOAD', 600); }
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
-  if (!t.peaks && !t.nopk) computePeaks(t);
+  if (!t.peaks && !t.nopk) setTimeout(() => { if (cur() === t) computePeaks(t); }, 400);   // skipping through discs must not decode every one of them
   if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: 'IRIDESCENT' }); } catch (e) { /* ignore */ } }
   if (play) doPlay();
 }
@@ -1294,13 +1296,15 @@ const BK = 'iridescent.bpm', BMUL = [1, 2, .5];
 const effBpm = t => (t && t.bpm ? t.bpm * BMUL[t.bm | 0] : 0);
 const beatLen = t => 60 / effBpm(t);
 function bpmStore(t) { try { const o = JSON.parse(localStorage.getItem(BK)) || {}; if (t) { delete o[t.key]; o[t.key] = [t.bpm, t.off, t.bm | 0, t.conf]; const ks = Object.keys(o); if (ks.length > 80) delete o[ks[0]]; localStorage.setItem(BK, JSON.stringify(o)); } return o; } catch (e) { return {}; } }
-function analyzeBpm(buf) {
+function analyzeBpm(buf) { return analyzeBpmA(buf); }
+async function analyzeBpmA(buf) {
   // onset envelope (low band + broadband energy flux) -> autocorrelation tempo -> comb-filter phase and fine tempo
   const sr = buf.sampleRate, hop = 512, n = Math.floor(buf.length / hop); if (n < 200) return null;
   const c0 = buf.getChannelData(0), c1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null, a = 1 - Math.exp(-2 * Math.PI * 180 / sr);
-  const low = new Float32Array(n), full = new Float32Array(n); let lp = 0;
+  const low = new Float32Array(n), full = new Float32Array(n); let lp = 0, t0 = performance.now();
+  const yl = async () => { if (performance.now() - t0 > 10) { await new Promise(r => setTimeout(r, 0)); t0 = performance.now(); } };   // time-sliced: the UI must stay responsive while a disc is analysed
   for (let i = 0; i < n; i++) {
-    let el = 0, ef = 0; const s0 = i * hop;
+    await yl(); let el = 0, ef = 0; const s0 = i * hop;
     for (let j = 0; j < hop; j++) { const x = c1 ? (c0[s0 + j] + c1[s0 + j]) * .5 : c0[s0 + j]; lp += a * (x - lp); el += lp * lp; ef += x * x; }
     low[i] = Math.sqrt(el / hop); full[i] = Math.sqrt(ef / hop);
   }
@@ -1312,7 +1316,7 @@ function analyzeBpm(buf) {
   let mx = 0; for (let i = 0; i < n; i++) { env[i] = Math.max(0, env[i] - sm[i] * 1.0); if (env[i] > mx) mx = env[i]; }
   if (mx <= 0) return null; for (let i = 0; i < n; i++) env[i] /= mx;
   const fps = sr / hop, minL = Math.floor(fps * 60 / 205), maxL = Math.ceil(fps * 60 / 55) * 4 + 2, acf = new Float32Array(maxL + 2);
-  for (let l = minL; l <= maxL && l < n - 10; l++) { let s = 0; for (let i = 0; i + l < n; i++) s += env[i] * env[i + l]; acf[l] = s / (n - l); }
+  for (let l = minL; l <= maxL && l < n - 10; l++) { await yl(); let s = 0; for (let i = 0; i + l < n; i++) s += env[i] * env[i + l]; acf[l] = s / (n - l); }
   const at = x => { const i = Math.floor(x), f = x - i; return (acf[i] || 0) * (1 - f) + (acf[i + 1] || 0) * f; };
   let best = 0, bs = -1;
   for (let B = 70; B <= 180; B += .25) {
@@ -1323,7 +1327,7 @@ function analyzeBpm(buf) {
   // fine tempo + phase: sum the envelope on a beat comb over the whole track
   let fb = best, fphi = 0, fs = -1;
   for (let B = best - 2; B <= best + 2; B += .05) {
-    const P = fps * 60 / B, steps = Math.max(8, Math.round(P * 2));
+    await yl(); const P = fps * 60 / B, steps = Math.max(8, Math.round(P * 2));
     for (let s = 0; s < steps; s++) {
       const phi = P * s / steps; let sc = 0; for (let p = phi; p < n - 1; p += P) { const i = Math.round(p); sc += env[i] + .5 * (env[i - 1] || 0) + .5 * (env[i + 1] || 0); }
       sc /= Math.floor(n / P);
@@ -1354,7 +1358,7 @@ async function computePeaks(t) {
   try {
     if (t.file.size > 110e6) throw new Error('big');
     initAudio();
-    const buf = t.buf || await new Promise(async (res, rej) => { try { const ab = await t.file.arrayBuffer(); const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); } catch (e) { rej(e); } });
+    const buf = t.buf || await new Promise(async (res, rej) => { try { const ab = await t.file.arrayBuffer(); if (cur() !== t) { rej(new Error('stale')); return; } const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); } catch (e) { rej(e); } });
     const n = 140, pk = new Float32Array(n), len = buf.length, step = len / n;
     for (let c = 0; c < Math.min(2, buf.numberOfChannels); c++) {
       const d = buf.getChannelData(c), st = Math.max(1, Math.floor(step / 96));
@@ -1366,9 +1370,9 @@ async function computePeaks(t) {
     if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
     const cached = bpmStore()[t.key];
     if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; t.conf = cached[3]; }
-    else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } }
+    else { await new Promise(r => setTimeout(r, 60)); if (cur() === t) { const an = await analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
     if (t.bpm && S.sync && cur() === t) syncApply(true);
-  } catch (e) { t.nopk = true; }
+  } catch (e) { if (!(e && e.message === 'stale')) t.nopk = true; }
   t.peaksBusy = false; ui.trackChanged(true);
 }
 
