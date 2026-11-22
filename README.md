@@ -1,6 +1,6 @@
 # IRIDESCENT
 
-**An analog-digital CD player for the phone, with a DJ console for tablet and desktop.** Load your own audio files, spin them on a jog disc, scratch, drop hot cues, loop, sync two decks and warm everything up with tape, drive and compression. One `index.html`, no build step, no dependencies.
+**An analog-digital CD player for the phone, tablet and desktop.** Load your own audio files, spin them on a jog disc, scratch, drop hot cues, loop, match the tempo and warm everything up with tape, drive and compression. One `index.html`, no build step, no dependencies.
 
 **[Open the live app](https://shoogaze.github.io/iridescent-player-/)** — on iPhone, open it in Safari and use Share → Add to Home Screen.
 
@@ -21,25 +21,20 @@ IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB 
 
 ## Screens
 
-The lower half of the deck is a carousel of big-button pages (swipe sideways, three dots show where you are): pads and transport, functions and FX, and in DJ mode the mixer.
+The lower half of the deck is a carousel of big-button pages (swipe sideways, two dots show where you are): pads and transport, functions and FX.
 
 ![Pages](screens/pages.jpg)
 
-On a tablet or a desktop, DJ mode is one console: two decks with a vertical mixer strip between them.
-
-![Desktop, DJ](screens/desktop-dj.jpg)
-
 In the app, press HELP and tap any control: the dot-matrix display names it and scrolls what it does.
 
-Keyboard (DJ mode): `Q W E R` deck A play / cue / sync / loop, `U I O P` the same for deck B, `,` and `.` move the crossfader, `\` toggles AUTO MIX. The mouse wheel over the disc scrubs or bends.
+Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous. The mouse wheel over the disc scrubs or bends.
 
 ## Features
 
-- **PLAY / DJ** – PLAY (default) is the single player, the same on every screen. Hold JOG to switch to DJ. On a phone, DJ is two decks A/B in portrait: swipe sideways over the jog area (free space or the display; the disc itself scratches) to switch deck, red ring on a dot = that deck is playing. Swipe sideways over the lower half to page through pads and transport, functions and FX, and the mixer. With a mouse, drag; on a trackpad, swipe with two fingers. The mixer has a crossfader, LOW / HI, a morphing FILTER per channel, MASTER, CUE pre-listen with SPLIT and **AUTO MIX**: near the end of a disc the other deck takes the next one, syncs the tempo, starts on the beat and the crossfader rides over. EXIT goes back to the single player. On a tablet or a desktop DJ is a wide console with both decks and the mixer on screen at once.
 - **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG modes VINYL / CDJ (rim bends the speed).
 - **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display, the red LED pulses on the beat. **SYNC** locks the deck to the master tempo via varispeed (8/16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
 - **CD behaviour**: PLAY spins the disc up first (about half a second), then the sound starts at full speed; PAUSE cuts the sound at once with no pitch fall (that is for tapes) while the disc spins down. Scratching keeps its vinyl feel.
-- **Buffer engine**: the disc is decoded and played from memory, so VARISPEED glides smoothly and play/pause has no dropout (like HISS). LOCK (pitch lock) uses its own WSOLA time-stretch in an AudioWorklet, so tempo changes keep the pitch. While the screen is off, playback hands over to the normal audio element (and LOCK falls back to the browser's stretcher there). Add `#nobuf` to the URL to switch it off.
+- **Buffer engine**: the disc is decoded and played from memory, so VARISPEED glides smoothly and play/pause has no dropout (like HISS). LOCK (pitch lock) uses its own WSOLA time-stretch in an AudioWorklet, so tempo changes keep the pitch. With the screen locked it keeps playing from the buffer (a timer drives the engine and the next track starts on its own), the same way HISS does. Add `#nobuf` to the URL to switch it off.
 - **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on. (Experimental: `index.html#gapless` hands the sound back without the ~0.4 s hole iOS leaves after a seek; it is off by default until it is verified on a real iPhone.) The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
 - **8 hot cues** per track: tap to set or jump, hold to clear. Stored per file.
 - **A-B loop**, **MAIN CUE**, **PREV / REW / PLAY / FF / NEXT**, play modes.
@@ -74,7 +69,7 @@ The home-screen icon is an iridescent disc in a bezel with a white hub and a red
 - Files stay on your device; nothing is uploaded.
 - Waveform peaks are computed for files up to 110 MB.
 - Layout: `index.html`, `manifest.webmanifest`, `sw.js`, `icons/`, `screens/` (all pictures used in this README).
-- Tested in headless Chromium. Behaviour on iOS Safari (pitch lock, lock screen, silent switch, two decks sharing one audio context in DJ mode) should be confirmed on a real device.
+- Tested in headless Chromium. Behaviour on iOS Safari (pitch lock, lock screen, silent switch) should be confirmed on a real device.
 
 ## Roadmap
 
