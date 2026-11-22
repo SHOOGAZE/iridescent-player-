@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.14
+
+- Label editor: a bigger disc (340 px in portrait, 290 px in landscape) and the whole layout sits in the middle of the screen instead of hugging the top. In landscape the fields and styles are two columns next to the disc.
+
 ## 1.0.13
 
 - The CRUSH and FILTER switches have a taller invisible touch area (46 pt tall on a 390 pt wide phone, was about 34 pt). The look is unchanged.

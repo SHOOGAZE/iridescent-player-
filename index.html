@@ -217,7 +217,7 @@ svg polyline{stroke:var(--ink)}
 #lib{padding:26px 24px 20px}
 #lbed{display:none;position:absolute;inset:0;z-index:5;background:#d5d9de;padding:28px 28px 24px;flex-direction:column;gap:12px;overflow:auto}
 #lib.ed #lbed{display:flex}
-#lbed .pv{position:relative;width:272px;height:272px;margin:2px auto 8px;border-radius:50%;box-shadow:0 5px 9px rgba(40,50,62,.38),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8);flex:0 0 auto}
+#lbed .pv{position:relative;width:340px;height:340px;margin:2px auto 8px;border-radius:50%;box-shadow:0 5px 9px rgba(40,50,62,.38),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8);flex:0 0 auto}
 #lbed .pv .cdrot{animation:none}
 #lbed .pv .cdhole{position:absolute;inset:36%;border-radius:50%;background:radial-gradient(circle closest-side,#e9ecef 0 38%,rgba(105,113,123,.7) 38% 40%,rgba(250,251,252,.92) 40% 82%,#9eb0bf 82% 85.5%,#1f2524 85.5% 100%);box-shadow:0 0 0 1px #6b727b}
 #lbed label{font:800 11px/1 var(--mono);letter-spacing:.14em;color:#5f616a;display:block;margin:4px 0 6px}
@@ -226,17 +226,19 @@ svg polyline{stroke:var(--ink)}
 #lbed .tp .lb,#lbed .ac .lb{padding:15px 6px;font-size:13px;border-radius:6px}
 #lbed .lb.on{background:#cb4a36;color:#fff}
 #lbed .tp .lb,#lbed .ac .lb{text-align:center}
-#lbed .rc{display:flex;flex-direction:column;gap:12px}
+#lbed .rc,#lbed .fl{display:flex;flex-direction:column;gap:12px}
+#lbed::before,#lbed::after{content:"";flex:1 0 0}   /* centre the whole editor; the spacers collapse when it is tall */
 #lbed .ac{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 #lbed .ac .lb{padding:18px 6px;font-size:14px}
-html.land #lbed{display:none;grid-template-columns:230px 1fr 1fr;grid-auto-rows:min-content;column-gap:22px;row-gap:10px;padding:18px 24px;align-content:start;overflow:auto}
-html.land #lib.ed #lbed{display:grid}
-html.land #lbed>.lt{grid-column:1;grid-row:1}
-html.land #lbed>.pv{grid-column:1;grid-row:2 / span 6;width:230px;height:230px;margin:0}
-html.land #lbed>div:nth-child(n+3):nth-child(-n+5){grid-column:2}
-html.land #lbed>.rc{grid-column:3;grid-row:1 / span 3;align-self:start}
+html.land #lbed{display:none;flex-direction:row;align-items:center;justify-content:center;gap:22px;padding:14px 24px;overflow:auto}
+html.land #lib.ed #lbed{display:flex}
+html.land #lbed::before,html.land #lbed::after{display:none}
+html.land #lbed>.lt{position:absolute;left:24px;top:14px}
+html.land #lbed>.pv{width:290px;height:290px;margin:0;flex:0 0 auto}
+html.land #lbed>.fl,html.land #lbed>.rc{flex:1 1 0;min-width:0}
 html.land #lbed input{padding:10px 12px}
-html.land #lbed .tp .lb{padding:12px 4px}
+html.land #lbed .tp{gap:7px}
+html.land #lbed .tp .lb{padding:12px 2px;font-size:12px;letter-spacing:.06em}
 html.land #lbed .ac .lb{padding:14px 6px}
 #lib .lk{display:none;flex:0 0 auto;margin-top:10px;padding-top:10px;border-top:1px solid #8d939c}
 #lib.keys .lk{display:block}
@@ -2123,7 +2125,7 @@ hit.addEventListener('pointercancel', () => { wdrag = false; clearTimeout(bpmTo)
 /* ================= library sheet ================= */
 const libEl = el('', chassis, ''); libEl.id = 'lib';
 libEl.innerHTML = '<div class="lh"><div class="lt">LIBRARY</div><div class="lb" data-a="add">ADD</div><div class="lb" data-a="goto">#</div><div class="lb" data-a="label">LABEL</div><div class="lb" data-a="demo">DEMO</div><div class="lb" data-a="clear">CLEAR</div><div class="lb done" data-a="done">DONE</div></div><div class="ll"></div><div class="lk"><div class="lkd">TRACK --</div><div class="lkp"><div class="lb" data-a="k1">1</div><div class="lb" data-a="k2">2</div><div class="lb" data-a="k3">3</div><div class="lb" data-a="k4">4</div><div class="lb" data-a="k5">5</div><div class="lb" data-a="k6">6</div><div class="lb" data-a="k7">7</div><div class="lb" data-a="k8">8</div><div class="lb" data-a="k9">9</div><div class="lb" data-a="kc">C</div><div class="lb" data-a="k0">0</div><div class="lb done" data-a="kgo">GO</div></div></div>';
-libEl.insertAdjacentHTML('beforeend','<div id="lbed"><div class="lt">DISC LABEL</div><div class="pv"><div class="cdrot"><svg class="lbl" viewBox="0 0 288 288"></svg></div><div class="cdhole"></div></div><div><label>LINE 1</label><input data-f="a" maxlength="60" autocomplete="off"></div><div><label>LINE 2</label><input data-f="b" maxlength="40" autocomplete="off"></div><div><label>NOTE (HANDWRITTEN)</label><input data-f="n" maxlength="40" autocomplete="off"></div><div class="rc"><div><label>STYLE</label><div class="tp"><div class="lb" data-t="-1">AUTO</div><div class="lb" data-t="0">A</div><div class="lb" data-t="1">B</div><div class="lb" data-t="2">C</div><div class="lb" data-t="3">D</div><div class="lb" data-t="4">E</div><div class="lb" data-t="5">F</div><div class="lb" data-t="6">G</div><div class="lb" data-t="7">H</div><div class="lb" data-t="8">BLANK</div><div class="lb" data-t="9">ART</div></div></div><div class="ac"><div class="lb" data-a="lreset">RESET</div><div class="lb done" data-a="ldone">OK</div></div></div></div>');
+libEl.insertAdjacentHTML('beforeend','<div id="lbed"><div class="lt">DISC LABEL</div><div class="pv"><div class="cdrot"><svg class="lbl" viewBox="0 0 288 288"></svg></div><div class="cdhole"></div></div><div class="fl"><div><label>LINE 1</label><input data-f="a" maxlength="60" autocomplete="off"></div><div><label>LINE 2</label><input data-f="b" maxlength="40" autocomplete="off"></div><div><label>NOTE (HANDWRITTEN)</label><input data-f="n" maxlength="40" autocomplete="off"></div></div><div class="rc"><div><label>STYLE</label><div class="tp"><div class="lb" data-t="-1">AUTO</div><div class="lb" data-t="0">A</div><div class="lb" data-t="1">B</div><div class="lb" data-t="2">C</div><div class="lb" data-t="3">D</div><div class="lb" data-t="4">E</div><div class="lb" data-t="5">F</div><div class="lb" data-t="6">G</div><div class="lb" data-t="7">H</div><div class="lb" data-t="8">BLANK</div><div class="lb" data-t="9">ART</div></div></div><div class="ac"><div class="lb" data-a="lreset">RESET</div><div class="lb done" data-a="ldone">OK</div></div></div></div>');
 const lbed = libEl.querySelector('#lbed'), lbPv = lbed.querySelector('svg.lbl'), lbPvRot = lbed.querySelector('.cdrot');
 let lbTrack = null;
 function lbPaint() {
