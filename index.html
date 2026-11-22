@@ -105,6 +105,8 @@ html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-beh
 .btn.dark{color:#f4f5f7;background:linear-gradient(180deg,#2a2c31 0%,#1d1f23 45%,#141518 100%);
   box-shadow:0 2px 0 #000,0 4px 6px rgba(0,0,0,.3),inset 0 0 0 1px #3a3d44}
 .btn.dark.down{box-shadow:0 .5px 0 #000,inset 0 0 0 1px #3a3d44}
+.btn.pad{font-size:15px;font-weight:600;color:#7a8390}
+.btn.pad.set{color:#c4361b}
 .btn.grey{background:linear-gradient(180deg,#d3d7dc 0%,#c5cad0 50%,#b8bdc4 100%);
   box-shadow:0 2px 0 #8b919a,0 4px 6px rgba(50,56,66,.2),inset 0 0 0 1px #aab0b8}
 .btn.grey.down{box-shadow:0 .5px 0 #8b919a,inset 0 0 0 1px #9aa0a8}
@@ -216,6 +218,9 @@ html.lite .knob.st .krot{transition:none}
 .cdwell{position:absolute;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 36%,rgba(120,130,142,.42),rgba(236,239,242,.7) 78%);
   box-shadow:inset 0 5px 11px rgba(40,50,62,.45),0 0 0 1.5px #a3a9b1,0 0 0 4px rgba(255,255,255,.75),0 0 0 5px #8f959e}
+.cdwell.land{animation:wellland .5s cubic-bezier(.2,.8,.3,1)}
+@keyframes wellland{0%{filter:brightness(1)}28%{filter:brightness(.9)}100%{filter:brightness(1)}}
+.cdrot.nx{pointer-events:none;z-index:1;transition:none}
 .cdisc{position:absolute;border-radius:50%;touch-action:none;cursor:grab;overflow:hidden;
   box-shadow:0 6px 11px rgba(40,50,62,.4),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8)}
 .cdisc::before{content:"";position:absolute;inset:-50%;pointer-events:none;z-index:3;will-change:transform;
@@ -238,6 +243,15 @@ html.lite .knob.st .krot{transition:none}
 .hubbtn svg{width:34px;height:34px;fill:#ff5a45;filter:drop-shadow(0 0 5px rgba(224,90,70,.8))}
 .hubbtn.on{box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,inset 0 1px 1px rgba(255,255,255,.3)}
 .hubbtn.down{transform:scale(.96)}
+.spn{position:absolute;inset:0;pointer-events:none}
+.spn svg{width:100%;height:100%;fill:none;filter:none}
+.cdlid{position:absolute;border-radius:50%;overflow:hidden;z-index:7;pointer-events:none}
+.lidp{position:absolute;inset:-2px;transform:translateX(-110%);
+  background:linear-gradient(115deg,rgba(246,248,250,.82),rgba(214,220,227,.74) 55%,rgba(238,241,244,.84));
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  clip-path:polygon(0 0,100% 0,100% 100%,22% 100%,0 78%);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.9),inset 0 -10px 18px rgba(120,132,146,.28);will-change:transform}
+.lidp::after{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95));}
 .led.cuep{background:#fff;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px var(--red)}
 .led.loopp{background:#1d1f24;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px #1d1f24}
 .led.on.big,.led.big{width:9px;height:9px;margin:-4.5px 0 0 -4.5px}
@@ -307,8 +321,11 @@ html.lite .knob.st .krot{transition:none}
 .dmhit{position:absolute;z-index:6;touch-action:none}
 
 .pgd{position:absolute;left:0;right:0;top:1052px;height:8px;display:flex;justify-content:center;gap:10px;pointer-events:none}
-.pgd i{width:7px;height:7px;border-radius:50%;background:rgba(40,44,52,.28);pointer-events:auto;transition:background .2s,transform .2s}
+.pgd i{width:9px;height:9px;border-radius:50%;background:rgba(40,44,52,.28);pointer-events:auto;transition:background .2s,transform .2s}
 .pgd i.on{background:#2a2d34;transform:scale(1.25)}
+.pgd{align-items:center}.pgd::before,.pgd::after{font:600 8px/1 var(--mono);letter-spacing:.12em;color:rgba(40,44,52,.38);transition:color .2s}
+.pgd::before{content:'PADS'}.pgd::after{content:'FX'}
+.pgd:has(i:first-child.on)::before,.pgd:has(i:last-child.on)::after{color:#2a2d34}
 
 /* landscape on phones: a viewing mode. disc in the middle, the display top right, one bar of keys that fades away */
 #land{position:fixed;inset:0;z-index:40;display:none;overflow:hidden;background:linear-gradient(#e8ebef,#d5d9de)}
@@ -533,7 +550,7 @@ function mkBtn(o) {
     pid = e.pointerId;
     try { b.setPointerCapture(pid); } catch (_) { }
     b.classList.add('down');
-    uiSnd(/\bdark\b/.test(o.cls || '') && /^[1-8]$/.test(o.text || '') ? 'pad' : 'key', (parseInt(o.text, 10) || 1) - 1);
+    uiSnd(/\b(dark|pad)\b/.test(o.cls || '') && /^[1-8]$/.test(o.text || '') ? 'pad' : 'key', (parseInt(o.text, 10) || 1) - 1);
     if (o.down) o.down(e);
   });
   const up = e => {
@@ -564,7 +581,7 @@ function mkSwitch(x, y, on, onChange) {
 }
 /* ================= state ================= */
 const SK = 'deck.s', CK = 'deck.cues';
-const S = Object.assign({ vol: .7, bass: .5, treb: .5, filt: .5, dsk: 0, tape: .4, fxTape: 1, fxFilt: 1, fxComp: 0, range: 0, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
+const S = Object.assign({ vol: .7, filt: .5, dsk: 0, crush: .4, fxCrush: 0, fxFilt: 1, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
 S.vari = 0; // varispeed always starts at 0
 let saveT = 0;
@@ -591,7 +608,9 @@ function clean(str) {
   return o.replace(/\s+/g, ' ').trim();
 }
 const fmt = s => { s = Math.max(0, Math.floor(s || 0)); const m = Math.min(99, Math.floor(s / 60)); return (m < 10 ? '0' : '') + m + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); };
-const baseRate = () => 1 + S.vari * (S.range ? .16 : .08);
+const VRANGE = .16;   // varispeed is fixed at +/-16 %
+if ('range' in S) { if (!S.range) S.vari = (S.vari || 0) / 2; delete S.range; }   // old saves: the range switch is gone
+const baseRate = () => 1 + S.vari * VRANGE;
 const cur = () => Q.list[Q.idx] || null;
 
 /* ================= audio ================= */
@@ -608,60 +627,69 @@ function initAudio() {
     ctx.onstatechange = () => { if (ctx.state !== 'running' && isPlaying()) ctx.resume().catch(() => { /* ignore */ }); };
   }
   const bus = ctx.createGain();
-  const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 110;
-  const treb = ctx.createBiquadFilter(); treb.type = 'highshelf'; treb.frequency.value = 5500;
-  bus.connect(bass); bass.connect(treb);
   const stg = () => {
     const i = ctx.createGain(), o = ctx.createGain(), dry = ctx.createGain(), wet = ctx.createGain();
     i.connect(dry); dry.connect(o); wet.connect(o); wet.gain.value = 0;
     let lastOn = null;
     return { i, o, dry, wet, set(on) { if (lastOn === on) return; lastOn = on; const t = ctx.currentTime; dry.gain.setTargetAtTime(on ? 0 : 1, t, .05); wet.gain.setTargetAtTime(on ? 1 : 0, t, .05); } };
   };
-  /* TAPE: wow + flutter, roll-off, soft saturation, hiss */
-  const tape = stg(), dl = ctx.createDelay(.05); dl.delayTime.value = .012;
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 12000; lp.Q.value = .5;
-  const sat = ctx.createWaveShaper(); sat.curve = curve(1.6); sat.oversample = '2x';
-  tape.i.connect(dl); dl.connect(lp); lp.connect(sat); sat.connect(tape.wet);
-  const l1 = ctx.createOscillator(); l1.frequency.value = .55; const g1 = ctx.createGain(); l1.connect(g1); g1.connect(dl.delayTime); l1.start();
-  const l2 = ctx.createOscillator(); l2.frequency.value = 6.3; const g2 = ctx.createGain(); l2.connect(g2); g2.connect(dl.delayTime); l2.start();
-  const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), nd = nb.getChannelData(0);
-  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
-  const ns = ctx.createBufferSource(); ns.buffer = nb; ns.loop = true;
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3500;
-  const hg = ctx.createGain(); ns.connect(hp); hp.connect(hg); hg.connect(tape.wet); ns.start();
+  /* CRUSH: lower bit depth and sample rate (an AudioWorklet; a plain quantiser until it is ready) */
+  const crush = stg(), cq = ctx.createWaveShaper(), cqc = new Float32Array(1025);
+  for (let k = 0; k < cqc.length; k++) cqc[k] = Math.round((k / 512 - 1) * 512) / 512;
+  cq.curve = cqc; crush.i.connect(cq); cq.connect(crush.wet);
+  crushInit(crush, cq);
   /* FILTER: one knob, low-pass to the left, high-pass to the right, open in the middle */
   const flt = stg(), fl = ctx.createBiquadFilter(), fh = ctx.createBiquadFilter();
   fl.type = 'lowpass'; fh.type = 'highpass'; fl.frequency.value = 20000; fh.frequency.value = 20; fl.Q.value = fh.Q.value = .7;
   flt.i.connect(fh); fh.connect(fl); fl.connect(flt.wet);
-  /* COMP */
-  const comp = stg(), cmp = ctx.createDynamicsCompressor(), mk = ctx.createGain();
-  cmp.threshold.value = -26; cmp.knee.value = 10; cmp.ratio.value = 5; cmp.attack.value = .006; cmp.release.value = .22; mk.gain.value = 1.9;
-  comp.i.connect(cmp); cmp.connect(mk); mk.connect(comp.wet);
   /* master */
   const vol = ctx.createGain(), lim = ctx.createDynamicsCompressor();
   lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .08;
-  treb.connect(tape.i); tape.o.connect(flt.i); flt.o.connect(comp.i); comp.o.connect(vol); vol.connect(lim); lim.connect(ctx.destination);
+  bus.connect(crush.i); crush.o.connect(flt.i); flt.o.connect(vol); vol.connect(lim); lim.connect(ctx.destination);
   const msp = ctx.createChannelSplitter(2), aL = ctx.createAnalyser(), aR = ctx.createAnalyser(); aL.fftSize = aR.fftSize = 512; lim.connect(msp); msp.connect(aL, 0); msp.connect(aR, 1);   // L/R level meter taps
   const src = ctx.createMediaElementSource(audio); let elg = null;
   if (GAPLESS) { elg = ctx.createGain(); src.connect(elg); elg.connect(bus); } else src.connect(bus);
-  E = { aL, aR, bus, bass, treb, tape, flt, fl, fh, comp, g1, g2, lp, hg, vol, src, elg };
+  E = { aL, aR, bus, crush, flt, fl, fh, vol, src, elg };
   applyFx();
   return E;
 }
+const CR_SRC = `
+class CR extends AudioWorkletProcessor {
+  static get parameterDescriptors() { return [{ name: 'bits', defaultValue: 16, minValue: 4, maxValue: 16, automationRate: 'k-rate' }, { name: 'hold', defaultValue: 1, minValue: 1, maxValue: 32, automationRate: 'k-rate' }]; }
+  constructor() { super(); this.c = [0, 0]; this.v = [0, 0]; }
+  process(inp, out, par) {
+    const a = inp[0], o = out[0]; if (!a || !a.length) return true;
+    const q = Math.pow(2, par.bits[0] - 1), h = Math.max(1, Math.round(par.hold[0]));
+    for (let ch = 0; ch < o.length; ch++) {
+      const x = a[Math.min(ch, a.length - 1)], y = o[ch]; let c = this.c[ch], v = this.v[ch];
+      for (let i = 0; i < y.length; i++) { if (c <= 0) { v = Math.round(x[i] * q) / q; c = h; } c--; y[i] = v; }
+      this.c[ch] = c; this.v[ch] = v;
+    }
+    return true;
+  }
+}
+registerProcessor('cr', CR);`;
+function crushInit(stage, shaper) {
+  try {
+    if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return;
+    const url = URL.createObjectURL(new Blob([CR_SRC], { type: 'application/javascript' }));
+    ctx.audioWorklet.addModule(url).then(() => {
+      const n = new AudioWorkletNode(ctx, 'cr', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
+      stage.i.connect(n); n.connect(stage.wet); try { shaper.disconnect(); } catch (e) { /* ignore */ }
+      E.crB = n.parameters.get('bits'); E.crH = n.parameters.get('hold'); fxLast.clear(); applyFx();
+    }).catch(() => { /* the quantiser stays */ });
+  } catch (e) { /* ignore */ }
+}
 const filtHz = v => { const x = (v - .5) * 2, a = Math.abs(x) < .04 ? 0 : (Math.abs(x) - .04) / .96; return { lp: x < 0 ? 20000 * Math.pow(.012, a) : 20000, hp: x > 0 ? 20 * Math.pow(300, a) : 20, q: .7 + a * 2.2 }; };
 const fxLast = new Map();
-let hissOn = false;
 function applyFx() {
   if (!E) return;
-  const t = ctx.currentTime, ta = S.tape;
+  const t = ctx.currentTime;
   const P = (prm, val, tc) => { if (fxLast.get(prm) === val) return; fxLast.set(prm, val); prm.setTargetAtTime(val, t, tc); };   // only parameters that really changed reach the audio thread
-  P(E.bass.gain, (S.bass - .5) * 24, .06);
-  P(E.treb.gain, (S.treb - .5) * 24, .06);
   P(E.vol.gain, S.vol * S.vol * 1.2, .04);
-  P(E.g1.gain, ta * .0016, .1); P(E.g2.gain, ta * .00025, .1);
-  P(E.lp.frequency, 14000 - ta * 9500, .1); P(E.hg.gain, hissOn ? ta * ta * .006 : 0, hissOn ? .08 : .3);   // tape hiss belongs to a running tape: silent when stopped
+  if (E.crB) { const a = S.crush; P(E.crB, 16 - a * 9, .02); P(E.crH, 1 + a * a * 7, .02); }
   const fq = filtHz(S.filt); P(E.fl.frequency, fq.lp, .05); P(E.fh.frequency, fq.hp, .05); P(E.fl.Q, fq.q, .05); P(E.fh.Q, fq.q, .05);
-  E.tape.set(S.fxTape); E.flt.set(S.fxFilt); E.comp.set(S.fxComp);
+  E.crush.set(S.fxCrush); E.flt.set(S.fxFilt);
 }
 let fxT = 0;
 function applyFxSoon() { if (!fxT) fxT = setTimeout(() => { fxT = 0; applyFx(); }, 40); }   // knob turns are folded into one update per 40 ms
@@ -940,7 +968,7 @@ async function mixPre(t) {   // decode the next disc ahead of time (plus its tem
     const ab = await t.file.arrayBuffer();
     const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); });
     if (Q.list.indexOf(t) < 0) return; scrKeep(t, buf);
-    if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; } else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
+    if (!t.bpm) { const c = bpmStore()[t.key]; if (c) { t.bpm = c[0]; t.off = c[1]; t.bm = c[2] | 0; t.conf = c[3]; } else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
   } catch (e) { t.nopk = true; }
   t.preBusy = false;
 }
@@ -966,6 +994,7 @@ function mixStart(j, D) {
   const og = SCR.out.gain; og.cancelScheduledValues(now); og.setValueAtTime(1, now); fadeSteps(og, T0, D, eqOut);
   s.start(T0, clamp(pIn, 0, t.buf.duration - .1));
   MIX = { j, t, T0, D, s, mg, rIn, pIn, synced, old: SCR.node };
+  mixFaceStart(t, wait, D);
   setTimeout(() => { if (MIX && MIX.t === t) ui.msg('MIX ' + t.name.replace(/\.[^.]+$/, ''), Math.min(D, 4) * 1000); }, wait * 1000);
   return true;
 }
@@ -986,7 +1015,7 @@ function mixFinish() {   // hand the deck over to the new disc (normal end, or c
   }, 70);
 }
 function mixAbort() {   // the user went elsewhere before the new disc came in
-  const m = MIX; if (!m) return; MIX = null; const n = ctx.currentTime;
+  const m = MIX; if (!m) return; MIX = null; mixFaceEnd(); const n = ctx.currentTime;
   try { m.mg.gain.cancelScheduledValues(n); m.mg.gain.setTargetAtTime(0, n, .01); m.s.stop(n + .05); } catch (e) { /* ignore */ }
   const go = SCR.out.gain; go.cancelScheduledValues(n); go.setValueAtTime(go.value, n); go.linearRampToValueAtTime(1, n + .03);
 }
@@ -1003,7 +1032,7 @@ function mixRequest(j) {   // NEXT while playing: the disc comes in on the beat 
 }
 function mixWatch() {
   if (MIX) { if (ctx.currentTime >= MIX.T0 + MIX.D) mixFinish(); return; }
-  if (!S.mix || !BUFENG || S.mode === 1 || !SCR.active || !SCR.wasPlaying || SCR.hand || SCR.search || jog.on || mixReq || !SCR.buf) return;
+  if (!S.mix || !BUFENG || !SCR.active || !SCR.wasPlaying || SCR.hand || SCR.search || jog.on || mixReq || !SCR.buf || S.mode === 1) return;
   const j = nextIdx(true); if (j < 0) return;
   const t = Q.list[j], rem = (SCR.buf.duration - SCR.pos) / Math.max(.25, SCR.rate);
   if (rem < 45 && !t.buf) mixPre(t);
@@ -1036,8 +1065,8 @@ function loadTrack(i, play, keep) {
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; ppCur = null; audio.load();
   cues = loadCues(t.key); loop = { a: null, b: null, on: false, auto: false }; mainCue = 0; slip = null; try { localStorage.setItem('iridescent.last', t.key); } catch (e) { /* ignore */ }
-  applyRate(); setCover(t); if (!keep) resumePos(t); if (S.sync && t.bpm && (!keep || keep.sync)) syncApply(true);
-  if (!keep) discSnd();
+  applyRate(); setCover(t, !!keep); if (!keep) resumePos(t); if (S.sync && t.bpm && (!keep || keep.sync)) syncApply(true);
+  if (!keep) { setTimeout(discSnd, 200); ui.msg('LOAD', 600); }
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
   if (!t.peaks && !t.nopk) computePeaks(t);
   if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: 'IRIDESCENT' }); } catch (e) { /* ignore */ } }
@@ -1188,21 +1217,39 @@ function coverBg(k) {
   const h0 = hueOf(k), c = j => 'hsla(' + ((h0 + j * 47) % 360) + ',62%,' + (84 + (j % 3) * 3) + '%,.66)';
   return 'repeating-radial-gradient(circle,rgba(70,80,92,.07) 0 .8px,rgba(255,255,255,.1) .8px 1.8px),conic-gradient(from ' + (h0 % 90) + 'deg,' + [0, 1, 2, 3, 4, 5, 0].map(c).join(',') + ')';
 }
-let coverTok = 0, firstCover = true;
-function setCover(t) {
+
+/* automix: the next disc's face dissolves in over the old one for the length of the crossfade */
+let mixOv = null;
+function mixFaceStart(t, wait, D) {
+  try {
+    mixFaceEnd(); const ov = cdrot.cloneNode(true); ov.classList.add('nx'); ov.style.background = coverBg(t.key); ov.style.opacity = 0;
+    const sv = ov.querySelector('svg.lbl'); if (sv) sv.innerHTML = labelInner(lbData(t));
+    cdrot.parentNode.insertBefore(ov, cdrot.nextSibling); mixOv = ov; void ov.offsetWidth;
+    ov.style.transition = 'opacity ' + D.toFixed(2) + 's linear ' + wait.toFixed(2) + 's'; ov.style.opacity = 1;
+  } catch (e) { mixOv = null; }
+}
+function mixFaceEnd() { if (mixOv) { try { mixOv.remove(); } catch (e) { /* ignore */ } mixOv = null; } }
+let coverTok = 0, firstCover = true, lidBusy = null;
+function setCover(t, keep) {
   try {
     const tok = ++coverTok, bg = coverBg(t.key), face = () => { cdrot.style.background = bg; drawLabel(t); };
     const gl = document.getElementById('glow'); if (gl) gl.style.background = bg;
+    if (keep) { face(); mixFaceEnd(); return; }   // automix: the face has already dissolved into the new one
     if (firstCover || !disc.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { firstCover = false; face(); return; }
-    // eject, swap the disc, drop the new one in
-    const out = disc.animate([{ transform: 'translateY(0) scale(1)', opacity: 1 }, { transform: 'translateY(-26px) scale(.9)', opacity: 0 }], { duration: 170, easing: 'cubic-bezier(.5,0,.9,.4)', fill: 'forwards' });
-    out.onfinish = () => {
-      if (tok !== coverTok) return;
-      face(); out.cancel();
-      disc.animate([
-        { transform: 'translateY(-34px) scale(1.14) rotate(-35deg)', opacity: 0, offset: 0 },
-        { transform: 'translateY(0) scale(1.03) rotate(6deg)', opacity: 1, offset: .62 },
-        { transform: 'translateY(0) scale(1) rotate(0deg)', opacity: 1, offset: 1 }], { duration: 460, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    // frosted shutter slides over the disc, the label changes underneath, the shutter leaves
+    if (!lidp.animate) { face(); return; }
+    if (lidBusy) { lidBusy.cancel(); lidBusy = null; face(); return; }
+    const ease = 'cubic-bezier(.4,0,.2,1)';
+    const a1 = lidp.animate([{ transform: 'translateX(-110%)' }, { transform: 'translateX(0)' }], { duration: 230, easing: ease, fill: 'forwards' });
+    lidBusy = a1;
+    a1.onfinish = () => {
+      if (tok !== coverTok) { a1.cancel(); lidBusy = null; return; }
+      face();
+      const wl = document.querySelector('.cdwell'); if (wl) { wl.classList.remove('land'); void wl.offsetWidth; wl.classList.add('land'); }
+      setTimeout(() => {
+        const a2 = lidp.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(110%)' }], { duration: 300, easing: ease, fill: 'forwards' });
+        lidBusy = a2; a2.onfinish = () => { a2.cancel(); a1.cancel(); lidBusy = null; };
+      }, 140);
     };
   } catch (e) { try { cdrot.style.background = coverBg(t.key); drawLabel(t); } catch (_) { /* ignore */ } }
 }
@@ -1233,7 +1280,7 @@ async function addFiles(files) {
 const BK = 'iridescent.bpm', BMUL = [1, 2, .5];
 const effBpm = t => (t && t.bpm ? t.bpm * BMUL[t.bm | 0] : 0);
 const beatLen = t => 60 / effBpm(t);
-function bpmStore(t) { try { const o = JSON.parse(localStorage.getItem(BK)) || {}; if (t) { delete o[t.key]; o[t.key] = [t.bpm, t.off, t.bm | 0]; const ks = Object.keys(o); if (ks.length > 80) delete o[ks[0]]; localStorage.setItem(BK, JSON.stringify(o)); } return o; } catch (e) { return {}; } }
+function bpmStore(t) { try { const o = JSON.parse(localStorage.getItem(BK)) || {}; if (t) { delete o[t.key]; o[t.key] = [t.bpm, t.off, t.bm | 0, t.conf]; const ks = Object.keys(o); if (ks.length > 80) delete o[ks[0]]; localStorage.setItem(BK, JSON.stringify(o)); } return o; } catch (e) { return {}; } }
 function analyzeBpm(buf) {
   // onset envelope (low band + broadband energy flux) -> autocorrelation tempo -> comb-filter phase and fine tempo
   const sr = buf.sampleRate, hop = 512, n = Math.floor(buf.length / hop); if (n < 200) return null;
@@ -1285,8 +1332,7 @@ function syncApply(quiet) {
   const need = MASTER / b; let r = null;
   [need, need * 2, need / 2].forEach(x => { if (Math.abs(x - 1) <= .16 && (r === null || Math.abs(x - 1) < Math.abs(r - 1))) r = x; });
   if (r === null) { S.vari = 0; vFader.set(.5); applyRate(); ui.varChanged(); ui.msg('OUT OF RANGE'); return false; }
-  if (Math.abs(r - 1) > .08 && !S.range) { S.range = 1; swRange.classList.add('on'); }
-  S.vari = clamp((r - 1) / (S.range ? .16 : .08), -1, 1); if (Math.abs(S.vari) < .004) S.vari = 0;
+  S.vari = clamp((r - 1) / VRANGE, -1, 1); if (Math.abs(S.vari) < .004) S.vari = 0;
   vFader.set((S.vari + 1) / 2); applyRate(); ui.varChanged(); save();
   if (!quiet) ui.msg('SYNC ' + MASTER.toFixed(1)); return true;
 }
@@ -1306,7 +1352,7 @@ async function computePeaks(t) {
     t.peaks = pk; if (!t.dur) t.dur = buf.duration;
     if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
     const cached = bpmStore()[t.key];
-    if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; }
+    if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; t.conf = cached[3]; }
     else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } }
     if (t.bpm && S.sync && cur() === t) syncApply(true);
   } catch (e) { t.nopk = true; }
@@ -1408,18 +1454,24 @@ function makeDemo() {
 /* ================= UI: frame ================= */
 [[12, 1050, 60], [474, 1050, -15]].forEach(c => el('screw', chassis, 'left:' + c[0] + 'px;top:' + c[1] + 'px;--r:' + c[2] + 'deg'));
 el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:214px'); el('groove', chassis, 'top:656px');
-el('vline', chassis, 'left:292px;top:8px;height:74px');
 const RED = '#b2432f';
 const pad2 = n => (n < 10 ? '0' : '') + n;
 
 /* ---- top band ---- */
-lab('RANGE', 212, 20, { cls: 'sm' });
-const swRange = mkSwitch(212, 50, S.range, v => { S.range = v; save(); applyRate(); ui.varChanged(); ui.msg('RANGE +/-' + (v ? 16 : 8) + '%'); });
-lab('8  16', 212, 76, { cls: 'sm' });
-[['TAPE', 'fxTape', 332], ['FILTER', 'fxFilt', 394], ['COMP', 'fxComp', 456]].forEach(f => {
+[['CRUSH', 'fxCrush', 375], ['FILTER', 'fxFilt', 437]].forEach(f => {
   lab(f[0], f[2], 20, { cls: 'sm' });
   mkSwitch(f[2], 50, S[f[1]], v => { S[f[1]] = v; save(); initAudio(); applyFx(); ui.msg(f[0] + (v ? ' ON' : ' OFF')); });
 });
+
+
+/* ---- automix indicator: three lamps 4 / 8 / 16 s, tap to change; blinks while a crossfade runs ---- */
+lab('AUTOMIX', 246, 20, { cls: 'sm' });
+const mixLeds = [4, 8, 16].map((v, i) => led(222 + i * 24, 51, ''));
+[4, 8, 16].forEach((v, i) => lab(String(v), 222 + i * 24, 74, { cls: 'sm' }));
+const mixHit = el('mixhit', chassis, 'left:202px;top:8px;width:88px;height:84px;position:absolute;cursor:pointer;touch-action:none');
+mixHit.addEventListener('pointerdown', e => { e.preventDefault(); const L = [0, 4, 8, 16]; S.mix = L[(L.indexOf(S.mix) + 1) % 4]; save(); uiSnd('key'); mixSync(); ui.msg(S.mix ? 'AUTOMIX ' + S.mix + 'S' : 'AUTOMIX OFF', 1500); });
+function mixSync() { mixLeds.forEach((l, i) => { const on = S.mix === [4, 8, 16][i]; l.classList.toggle('on', on); l.classList.toggle('cur', on && !!MIX); }); }
+setInterval(mixSync, 250); mixSync();
 
 /* ---- dot-matrix display ---- */
 const COLS = 142, ROWS = 34, PITCH = 3, PAD_ = 6, DX = 31, DY = 104;
@@ -1546,17 +1598,22 @@ const vFader = mkFader({ x: 462, y: 292, len: 290, value: .5, def: .5, detent: .
 
 /* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
 const hub = el('hubbtn', chassis, 'left:' + (JX - 48) + 'px;top:' + (JY - 48) + 'px;width:96px;height:96px');
+const spn = document.createElement('div'); spn.className = 'spn';
+{ let c = ''; for (let k = 0; k < 3; k++) c += '<g transform="rotate(' + k * 120 + ' 48 48)"><path d="M41 31 L41 15 Q48 8 55 15 L55 31 Z" fill="url(#clw)" stroke="#05060a" stroke-width="1"/><path d="M44 14 Q48 11 52 14" stroke="rgba(255,255,255,.35)" stroke-width="1.4"/></g>';
+  spn.innerHTML = '<svg viewBox="0 0 96 96"><defs><linearGradient id="clw" x1="0" x2="1"><stop offset="0" stop-color="#55595f"/><stop offset=".5" stop-color="#2a2d33"/><stop offset="1" stop-color="#0d0e11"/></linearGradient></defs><circle cx="48" cy="48" r="29" fill="#0b0c0f" stroke="#2c2f35" stroke-width="1.5"/>' + c + '<circle cx="48" cy="48" r="13" fill="#1b1d21" stroke="#4a4e55" stroke-width="1.2"/><circle cx="48" cy="48" r="5" fill="#08090b" stroke="#5a5f67" stroke-width="1"/></svg>'; hub.insertBefore(spn, hub.firstChild); }
+const lid = el('cdlid', chassis, 'left:' + (JX - 184) + 'px;top:' + (JY - 184) + 'px;width:368px;height:368px');
+const lidp = document.createElement('div'); lidp.className = 'lidp'; lid.appendChild(lidp);
 
 /* ---- cue point strip: 8 tall hot-cue pads (thumb zone) ---- */
-const cueLed = [], pdn = [];
+const cueLed = [], pdn = [], padEls = [];
 {
   const _c = chassis; chassis = pageLayer(0);
   for (let i = 0; i < 8; i++) {
     const x = 43 + (i % 4) * 106, y = 700 + (i >> 2) * 84;
     cueLed.push(led(x + 48, y - 10, ''));
-    mkBtn({ x, y, w: 96, h: 62, cls: 'dark lg', text: String(i + 1),
+    padEls.push(mkBtn({ x, y, w: 96, h: 62, cls: 'pad lg', text: String(i + 1),
       down: () => { const st = pdn[i] = { cleared: false }; st.to = setTimeout(() => { st.cleared = clearCue(i); }, 550); },
-      up: (e, cancel) => { const st = pdn[i]; if (!st) return; clearTimeout(st.to); if (!cancel && !st.cleared) cuePad(i); } });
+      up: (e, cancel) => { const st = pdn[i]; if (!st) return; clearTimeout(st.to); if (!cancel && !st.cleared) cuePad(i); } }));
   }
   chassis = _c;
 }
@@ -1584,7 +1641,10 @@ const _c0 = chassis; chassis = pageLayer(0);
 const TY = 898, TH = 84;
 const bPrev = mkBtn({ x: 38, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) prev(); } }); icon(bPrev, IC.prev);
 const hR = holdKey(-1), bRew = mkBtn({ x: 116, y: TY, w: 70, h: TH, text: '', down: hR.down, up: hR.up }); icon(bRew, IC.rew);
-const bPlay = mkBtn({ x: 194, y: TY, w: 112, h: TH, text: '', up: (e, c) => { if (!c) togglePlay(); } }); icon(bPlay, IC.play);
+let plTo = 0, plLong = false;
+const bPlay = mkBtn({ x: 194, y: TY, w: 112, h: TH, text: '',
+  down: () => { plLong = false; clearTimeout(plTo); plTo = setTimeout(() => { plLong = true; if (isPlaying()) doPause(); seek(0); ui.msg('STOP'); }, 650); },
+  up: (e, c) => { clearTimeout(plTo); if (c || plLong) return; togglePlay(); } }); icon(bPlay, IC.play);
 const hF = holdKey(1), bFf = mkBtn({ x: 314, y: TY, w: 70, h: TH, text: '', down: hF.down, up: hF.up }); icon(bFf, IC.ff);
 const bNext = mkBtn({ x: 392, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) next(); } }); icon(bNext, IC.next);
 const ledPlay = led(250, TY - 12, '');
@@ -1593,14 +1653,14 @@ chassis = _c0;
 /* ---- function row ---- */
 const _c1 = chassis; chassis = pageLayer(1);
 const grp = (t, x0, x1, y) => { const w = t.length * 7 + 18, c = (x0 + x1) / 2; el('', chassis, 'position:absolute;left:' + x0 + 'px;top:' + y + 'px;width:' + (c - w / 2 - x0) + 'px;height:1px;background:var(--line)'); el('', chassis, 'position:absolute;left:' + (c + w / 2) + 'px;top:' + y + 'px;width:' + (x1 - c - w / 2) + 'px;height:1px;background:var(--line)'); lab(t, c, y, { cls: 'sm', c: '#6b7078' }); };
-grp('LOOM  FX', 43, 457, 698); grp('CUE  /  LOOP', 43, 457, 828); grp('TEMPO  /  MODE', 43, 351, 940);
+grp('FX', 43, 457, 698); grp('CUE  /  LOOP', 43, 457, 828); grp('TEMPO  /  MODE', 43, 351, 940);
 const FH = 64, FW = 96, fx = i => 43 + (i % 4) * 106, fy = i => 844 + (i >> 2) * 112, fc = i => fx(i) + FW / 2;
 mkBtn({ x: fx(0), y: fy(0), w: FW, h: FH, text: 'CUE', down: () => cueDown(), up: () => cueUp() });
 let aLong = false, aTo = 0;
-mkBtn({ x: fx(1), y: fy(1), w: FW, h: FH, cls: 'dark', text: 'A',
+mkBtn({ x: fx(1), y: fy(1), w: FW, h: FH, cls: 'grey', text: 'A',
   down: () => { aLong = false; aTo = setTimeout(() => { aLong = true; loopClear(); }, 650); },
   up: (e, c) => { clearTimeout(aTo); if (!c && !aLong) loopA(); } });
-mkBtn({ x: fx(2), y: fy(2), w: FW, h: FH, cls: 'dark', text: 'B', up: (e, c) => { if (!c) loopB(); } });
+mkBtn({ x: fx(2), y: fy(2), w: FW, h: FH, cls: 'grey', text: 'B', up: (e, c) => { if (!c) loopB(); } });
 let lpRoll = false, lpTo = 0;
 mkBtn({ x: fx(3), y: fy(3), w: FW, h: FH, text: 'LOOP',
   down: () => { lpRoll = false; lpTo = setTimeout(() => { lpRoll = true; loopRollStart(); }, 300); },
@@ -1608,7 +1668,7 @@ mkBtn({ x: fx(3), y: fy(3), w: FW, h: FH, text: 'LOOP',
 const ledSync = led(fc(4), fy(4) - 12, S.sync ? 'on' : '');
 function syncToggle() { S.sync = S.sync ? 0 : 1; save(); ledSync.classList.toggle('on', !!S.sync); if (S.sync) { if (!MASTER && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); syncApply(false); } else ui.msg('SYNC OFF'); }
 let syLong = false, syTo = 0;
-mkBtn({ x: fx(4), y: fy(4), w: FW, h: FH, cls: 'dark', text: 'SYNC',
+mkBtn({ x: fx(4), y: fy(4), w: FW, h: FH, cls: 'grey', text: 'SYNC',
   down: () => { syLong = false; syTo = setTimeout(() => { syLong = true; S.q = S.q ? 0 : 1; save(); ui.msg('QUANTIZE ' + (S.q ? 'ON' : 'OFF')); }, 600); },
   up: (e, c) => { clearTimeout(syTo); if (c || syLong) return; syncToggle(); } });
 let mdTo = 0, mdLong = false;
@@ -1620,16 +1680,15 @@ mkBtn({ x: fx(6), y: fy(6), w: FW, h: FH, text: 'LOCK', up: (e, c) => { if (c) r
 const ledA = led(fc(1), fy(1) - 12, ''), ledB = led(fc(2), fy(2) - 12, ''), ledLoop = led(fc(3), fy(3) - 12, '');
 ['MAIN CUE', 'LOOP IN', 'LOOP OUT', 'LOOP', 'TEMPO SYNC', 'PLAY MODE', 'PITCH LOCK'].forEach((t, i) => lab(t, fc(i), fy(i) + FH + 16, { cls: 'sm' }));
 
-/* ---- FX knobs (the LOOM stages) ---- */
-[['bass', 'BASS', 91, .5], ['treb', 'TREBLE', 197, .5], ['filt', 'FILTER', 303, .5], ['tape', 'TAPE', 409, .4]].forEach(k => {
-  lab(k[1], k[2], 796, { cls: 'sm' });
-  mkKnob({ x: k[2], y: 746, d: 58, value: S[k[0]], def: k[3], onChange: v => {
+/* ---- FX knobs (filter + crush) ---- */
+[['filt', 'FILTER', 170, .5], ['crush', 'CRUSH', 330, .4]].forEach(k => {
+  lab(k[1], k[2], 810, { cls: 'sm' });
+  mkKnob({ name: k[0], x: k[2], y: 754, d: 80, value: S[k[0]], def: k[3], onChange: v => {
     S[k[0]] = v; save(); initAudio(); applyFxSoon();
-    if (k[0] === 'bass' || k[0] === 'treb') { const db = Math.round((v - .5) * 24); ui.msg(k[1] + ' ' + (db > 0 ? '+' : '') + db + ' DB', 900); }
-    else if (k[0] === 'filt') { const f = filtHz(v), hz = h => h >= 1000 ? (h / 1000).toFixed(1) + 'K' : Math.round(h) + ''; ui.msg(f.lp < 19000 ? 'LOW PASS ' + hz(f.lp) : f.hp > 21 ? 'HIGH PASS ' + hz(f.hp) : 'FILTER OPEN', 900); }
+    if (k[0] === 'filt') { const f = filtHz(v), hz = h => h >= 1000 ? (h / 1000).toFixed(1) + 'K' : Math.round(h) + ''; ui.msg(f.lp < 19000 ? 'LOW PASS ' + hz(f.lp) : f.hp > 21 ? 'HIGH PASS ' + hz(f.hp) : 'FILTER OPEN', 900); }
     else ui.msg(k[1] + ' ' + Math.round(v * 100) + '%', 900);
   } });
-  lab('0', k[2] - 28, 774, { cls: 'sm', s: 7.5 }); lab('10', k[2] + 28, 774, { cls: 'sm', s: 7.5 });
+  lab('0', k[2] - 39, 788, { cls: 'sm', s: 7.5 }); lab('10', k[2] + 39, 788, { cls: 'sm', s: 7.5 });
 });
 const BJ = [1, 4, 8, 16, -16, -8, -4, -1], bjTxt = () => (BJ[S.bj] > 0 ? '+' : '') + BJ[S.bj];
 let bjLong = false, bjTo = 0;
@@ -1650,23 +1709,22 @@ let hlTo = 0, hlLong = false;
 mkBtn({ x: 22, y: 34, w: 56, h: 36, cls: 'grey', text: 'HELP', id: 'help',
   down: () => { hlLong = false; clearTimeout(hlTo); hlTo = setTimeout(() => { hlLong = true; helpLang = helpLang === 'ru' ? 'en' : 'ru'; try { localStorage.setItem('iridescent.lang', helpLang); } catch (e) { /* ignore */ } if (helpOn) { const hi = helpIntro(); helpName = clean(hi[0]); helpDesc = clean(hi[1]); helpAt = performance.now(); } else ui.msg(helpLang === 'ru' ? 'РУССКИЙ' : 'ENGLISH'); }, 700); },
   up: (e, c) => { clearTimeout(hlTo); if (c || hlLong) return; helpOn = !helpOn; ledHelp.classList.toggle('on', helpOn); const hi = helpIntro(); helpName = helpOn ? clean(hi[0]) : ''; helpDesc = helpOn ? clean(hi[1]) : ''; helpAt = performance.now(); } });
-if (S.jm === undefined) S.jm = S.scr ? 0 : 0;
+if (S.jm === undefined || S.jm === 1) S.jm = 0;   // CDJ rim-bend mode is gone: JOG is scratch on or off
 S.scr = S.jm === 2 ? 0 : 1;
-const JMN = ['VINYL', 'CDJ', 'NO SCRATCH']; 
+const JMN = ['SCRATCH', '', 'NO SCRATCH']; 
 let jgLong = false, jgTo = 0;
 const bScr = mkBtn({ x: 84, y: 34, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'JOG', id: 'scr', down: () => { jgLong = false; clearTimeout(jgTo); jgTo = setTimeout(() => { jgLong = true; S.dsk = S.dsk ? 0 : 1; save(); const t = cur(); cdrot.style.background = coverBg(t ? t.key : ''); ui.msg('DISC ' + (S.dsk ? 'WHITE' : 'COLOR')); }, 650); },
-  up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = (S.jm + 1) % 3; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
+  up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = S.jm === 2 ? 0 : 2; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
 const HELP = {
-  RANGE: ['RANGE', 'VARISPEED RANGE  8 OR 16 PERCENT'],
-  'sw:TAPE': ['TAPE FX', 'SWITCHES THE TAPE STAGE  WOW  FLUTTER  HISS  SOFT SATURATION'],
+  'sw:CRUSH': ['CRUSH FX', 'SWITCHES THE CRUSH STAGE  LOWER BIT DEPTH AND SAMPLE RATE  EARLY DIGITAL GRIT'],
   'sw:FILTER': ['FILTER FX', 'SWITCHES THE FILTER STAGE ON OR OFF'],
-  'sw:COMP': ['COMP FX', 'SWITCHES THE COMPRESSOR  EVENS OUT THE LEVEL'],
-  DISPLAY: ['DISPLAY', 'TAP THE TOP TO SWITCH ELAPSED AND REMAINING  DRAG THE WAVEFORM TO SEEK'],
+  DISPLAY: ['DISPLAY', 'TAP THE TOP TO SWITCH ELAPSED AND REMAINING  TAP THE BPM IN TIME FOR TAP TEMPO  HOLD IT FOR X2 OR HALF  DRAG THE WAVEFORM TO SEEK'],
   VOL: ['VOLUME', 'OUTPUT LEVEL  DOUBLE TAP FOR THE DEFAULT'],
   VARI: ['VARISPEED', 'SLOWER OR FASTER  DOUBLE TAP RESETS TO ZERO  LOCK KEEPS THE PITCH'],
   JOG: ['JOG', 'TOUCH TO HOLD THE DISC  MOVE IT BOTH WAYS TO SCRATCH  RELEASE TO PLAY ON  RING SHOWS PROGRESS'],
-  SCR: ['JOG MODE', 'HOLD  DISC WHITE OR COLOR  TAP  VINYL  THE WHOLE DISC SCRATCHES  CDJ  TOP SCRATCHES  THE RIM BENDS THE SPEED'],
-  PLAY: ['PLAY / PAUSE', 'STARTS AND STOPS THE DISC'],
+  SCR: ['JOG MODE', 'HOLD  DISC WHITE OR COLOR  TAP  SCRATCH ON OR OFF'],
+  MIX: ['AUTOMIX', 'TAP TO CHOOSE OFF  4  8  OR 16 SECONDS  THE NEXT DISC FADES IN ON THE BEAT  LAMP BLINKS WHILE MIXING'],
+  PLAY: ['PLAY / PAUSE', 'STARTS AND PAUSES THE DISC  HOLD  STOP AND BACK TO THE START'],
   PREV: ['PREV', 'RESTARTS THE DISC  PRESS AGAIN NEAR THE START FOR THE PREVIOUS ONE'],
   REW: ['REW', 'HOLD TO SEARCH BACKWARD'],
   FF: ['FF', 'HOLD TO SEARCH FORWARD'],
@@ -1676,27 +1734,24 @@ const HELP = {
   B: ['LOOP OUT', 'MARKS THE LOOP END AND STARTS THE LOOP  IN AN AUTO LOOP  DOUBLES IT'],
   SYNC: ['TEMPO SYNC', 'TAP LOCKS THE TEMPO TO THE MASTER BPM  HOLD FOR QUANTIZE  TAP BPM ON THE DISPLAY TO FIX HALF OR DOUBLE TIME'],
   LOOP: ['LOOP', 'TAP  AUTO LOOP ON THE BEAT 1/4 TO 4 BARS  HOLD  LOOP ROLL  THE TRACK KEEPS RUNNING UNDER IT AND SLIPS BACK ON RELEASE'],
-  MODE: ['PLAY MODE', 'NORMAL  REPEAT ONE  REPEAT ALL  SHUFFLE'],
+  MODE: ['PLAY MODE', 'NORMAL  REPEAT ONE  REPEAT ALL  SHUFFLE  HOLD  AUTOMIX LENGTH'],
   LOCK: ['PITCH LOCK', 'KEEPS THE PITCH WHEN THE SPEED CHANGES'],
   JUMP: ['BEAT JUMP', 'TAP JUMPS BY THE SHOWN NUMBER OF BEATS  HOLD TO CHANGE THE STEP  NEEDS A DETECTED BPM'],
   LIB: ['LIBRARY', 'OPENS THE DISC SHELF  ADD FILES OR LOAD THE DEMO DISC  HOLD TO SWITCH KEY CLICKS ON OR OFF'],
-  'kn:BASS': ['BASS', 'LOW SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
-  'kn:TREBLE': ['TREBLE', 'HIGH SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
   'kn:FILTER': ['FILTER', 'LEFT CLOSES THE HIGHS  RIGHT THINS THE LOWS  MIDDLE IS OPEN  DOUBLE TAP RESETS'],
-  'kn:TAPE': ['TAPE', 'HOW MUCH TAPE WOBBLE AND HISS  NEEDS THE TAPE SWITCH ON']
+  'kn:CRUSH': ['CRUSH', 'HOW HARD THE BITS AND SAMPLE RATE ARE CRUSHED  NEEDS THE CRUSH SWITCH ON']
 };
 for (let i = 1; i <= 8; i++) HELP['pad' + i] = ['HOT CUE ' + i, 'TAP TO SET  TAP AGAIN TO JUMP HERE  HOLD TO CLEAR'];
 const HELP_RU = {
-  RANGE: ['ДИАПАЗОН', 'ДИАПАЗОН ВАРИСПИДА  8 ИЛИ 16 ПРОЦЕНТОВ'],
-  'sw:TAPE': ['ЛЕНТА', 'ВКЛЮЧАЕТ ЛЕНТУ  ДЕТОНАЦИЯ  ФЛАТТЕР  ШУМ  МЯГКАЯ НАСЫЩЕННОСТЬ'],
+  'sw:CRUSH': ['КРАШ', 'ВКЛЮЧАЕТ КРАШ  МЕНЬШЕ РАЗРЯДОВ И ЧАСТОТЫ ДИСКРЕТИЗАЦИИ  РАННЯЯ ЦИФРОВАЯ ГРЯЗЬ'],
   'sw:FILTER': ['ФИЛЬТР', 'ВКЛЮЧАЕТ ИЛИ ВЫКЛЮЧАЕТ ФИЛЬТР'],
-  'sw:COMP': ['КОМПРЕССОР', 'ВКЛЮЧАЕТ КОМПРЕССОР  ВЫРАВНИВАЕТ ГРОМКОСТЬ'],
-  DISPLAY: ['ДИСПЛЕЙ', 'КАСАНИЕ ВЕРХА МЕНЯЕТ ПРОШЕДШЕЕ И ОСТАВШЕЕСЯ ВРЕМЯ  ТЯНИ ВОЛНУ ДЛЯ ПЕРЕМОТКИ'],
+  DISPLAY: ['ДИСПЛЕЙ', 'КАСАНИЕ ВЕРХА МЕНЯЕТ ПРОШЕДШЕЕ И ОСТАВШЕЕСЯ ВРЕМЯ  ТАПАЙ ПО BPM В ТАКТ ДЛЯ ТАП ТЕМПО  УДЕРЖИВАЙ ДЛЯ X2 ИЛИ ПОЛОВИНЫ  ТЯНИ ВОЛНУ ДЛЯ ПЕРЕМОТКИ'],
   VOL: ['ГРОМКОСТЬ', 'УРОВЕНЬ ВЫХОДА  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   VARI: ['ВАРИСПИД', 'МЕДЛЕННЕЕ ИЛИ БЫСТРЕЕ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ В НОЛЬ  LOCK СОХРАНЯЕТ ТОНАЛЬНОСТЬ'],
   JOG: ['ДЖОГ', 'КАСАНИЕ ДЕРЖИТ ДИСК  ВОДИ В ОБЕ СТОРОНЫ ДЛЯ СКРЕТЧА  ОТПУСТИ И ИГРА ПРОДОЛЖИТСЯ  КОЛЬЦО ПОКАЗЫВАЕТ ПРОГРЕСС'],
-  SCR: ['РЕЖИМ ДЖОГА', 'УДЕРЖИВАЙ  ДИСК БЕЛЫЙ ИЛИ ЦВЕТНОЙ  ТАП  VINYL  СКРЕТЧИТСЯ ВЕСЬ ДИСК  CDJ  СКРЕТЧ ВЕРХОМ  ОБОД МЕНЯЕТ СКОРОСТЬ'],
-  PLAY: ['ПУСК / ПАУЗА', 'ЗАПУСКАЕТ И ОСТАНАВЛИВАЕТ ДИСК'],
+  SCR: ['РЕЖИМ ДЖОГА', 'УДЕРЖИВАЙ  ДИСК БЕЛЫЙ ИЛИ ЦВЕТНОЙ  ТАП  СКРЕТЧ ВКЛ ИЛИ ВЫКЛ'],
+  MIX: ['АВТОМИКС', 'ТАП МЕНЯЕТ  ВЫКЛ  4  8  ИЛИ 16 СЕКУНД  СЛЕДУЮЩИЙ ДИСК ВХОДИТ В ТАКТ  ЛАМПА МИГАЕТ ВО ВРЕМЯ МИКСА'],
+  PLAY: ['ПУСК / ПАУЗА', 'ЗАПУСКАЕТ И СТАВИТ НА ПАУЗУ  УДЕРЖИВАЙ  СТОП И В НАЧАЛО'],
   PREV: ['НАЗАД', 'НАЧИНАЕТ ДИСК СНАЧАЛА  НАЖМИ ЕЩЁ РАЗ У НАЧАЛА ДЛЯ ПРЕДЫДУЩЕГО'],
   REW: ['ПЕРЕМОТКА', 'УДЕРЖИВАЙ ДЛЯ ПОИСКА НАЗАД'],
   FF: ['ВПЕРЁД', 'УДЕРЖИВАЙ ДЛЯ ПОИСКА ВПЕРЁД'],
@@ -1706,14 +1761,12 @@ const HELP_RU = {
   B: ['КОНЕЦ ЛУПА', 'СТАВИТ КОНЕЦ ЛУПА И ЗАПУСКАЕТ ЕГО  В АВТОЛУПЕ  УДВАИВАЕТ'],
   SYNC: ['СИНХРОН ТЕМПА', 'ТАП ПОДСТРАИВАЕТ ТЕМП ПОД МАСТЕР BPM  УДЕРЖИВАЙ ДЛЯ КВАНТИЗАЦИИ  ТАП ПО BPM НА ДИСПЛЕЕ УБИРАЕТ ПОЛОВИННЫЙ ИЛИ ДВОЙНОЙ ТЕМП'],
   LOOP: ['ЛУП', 'ТАП  АВТОЛУП НА ДОЛЮ ОТ 1/4 ДО 4 ТАКТОВ  УДЕРЖИВАЙ  ЛУП РОЛЛ  ТРЕК ИДЁТ ПОД НИМ И ВОЗВРАЩАЕТСЯ ПРИ ОТПУСКАНИИ'],
-  MODE: ['РЕЖИМ ИГРЫ', 'ОБЫЧНЫЙ  ПОВТОР ОДНОГО  ПОВТОР ВСЕХ  СЛУЧАЙНО'],
+  MODE: ['РЕЖИМ ИГРЫ', 'ОБЫЧНЫЙ  ПОВТОР ОДНОГО  ПОВТОР ВСЕХ  СЛУЧАЙНО  УДЕРЖИВАЙ  ДЛИНА АВТОМИКСА'],
   LOCK: ['ФИКС ТОНА', 'СОХРАНЯЕТ ТОНАЛЬНОСТЬ ПРИ СМЕНЕ СКОРОСТИ'],
   JUMP: ['ПРЫЖОК ПО БИТАМ', 'ТАП ПРЫГАЕТ НА ПОКАЗАННОЕ ЧИСЛО БИТОВ  УДЕРЖИВАЙ ЧТОБЫ СМЕНИТЬ ШАГ  НУЖЕН BPM'],
   LIB: ['БИБЛИОТЕКА', 'ОТКРЫВАЕТ ПОЛКУ ДИСКОВ  ДОБАВЬ ФАЙЛЫ ИЛИ ЗАГРУЗИ ДЕМО-ДИСК  УДЕРЖИВАЙ ЧТОБЫ ВКЛЮЧИТЬ ИЛИ ВЫКЛЮЧИТЬ ЗВУК КНОПОК'],
-  'kn:BASS': ['БАС', 'НИЗКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
-  'kn:TREBLE': ['ВЧ', 'ВЫСОКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   'kn:FILTER': ['ФИЛЬТР', 'ВЛЕВО ГЛУШИТ ВЫСОКИЕ  ВПРАВО УБИРАЕТ НИЗКИЕ  ЦЕНТР ОТКРЫТ  ДВОЙНОЙ ТАП СБРОС'],
-  'kn:TAPE': ['ЛЕНТА', 'СКОЛЬКО ЛЕНТОЧНОЙ ДЕТОНАЦИИ И ШУМА  НУЖЕН ВКЛЮЧЁННЫЙ TAPE']
+  'kn:CRUSH': ['КРАШ', 'СКОЛЬКО ЦИФРОВОЙ ГРЯЗИ  НУЖЕН ВКЛЮЧЁННЫЙ CRUSH']
 };
 for (let i = 1; i <= 8; i++) HELP_RU['pad' + i] = ['ХОТ-КЬЮ ' + i, 'ТАП СТАВИТ  ТАП ЕЩЁ РАЗ ПРЫГАЕТ СЮДА  УДЕРЖИВАЙ ДЛЯ СБРОСА'];
 let helpLang = 'en'; try { helpLang = localStorage.getItem('iridescent.lang') || ((navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en'); } catch (e) { /* ignore */ }
@@ -1726,8 +1779,9 @@ function helpKey(t) {
     const tx = n.textContent.trim(); if (/^[1-8]$/.test(tx)) return 'pad' + tx; if (tx) return tx;
     return ({ 38: 'PREV', 116: 'REW', 194: 'PLAY', 314: 'FF', 392: 'NEXT' })[Math.round(parseFloat(n.style.left))] || null;
   }
-  if ((n = t.closest('.sw'))) { const k = ({ 212: 'RANGE', 332: 'sw:TAPE', 394: 'sw:FILTER', 456: 'sw:COMP' })[Math.round(parseFloat(n.style.left))]; return k || null; }
-  if ((n = t.closest('.knob'))) return ({ 38: 'kn:BASS', 126: 'kn:TREBLE', 214: 'kn:FILTER', 302: 'kn:TAPE' })[Math.round(parseFloat(n.style.left))] || null;
+  if (t.closest('.mixhit')) return 'MIX';
+  if ((n = t.closest('.sw'))) { const k = ({ 375: 'sw:CRUSH', 437: 'sw:FILTER' })[Math.round(parseFloat(n.style.left))]; return k || null; }
+  if ((n = t.closest('.knob'))) return ({ 'k-filt': 'kn:FILTER', 'k-crush': 'kn:CRUSH' })[n.dataset.id] || null;
   if ((n = t.closest('.vfader'))) return Math.round(parseFloat(n.style.left)) < 200 ? 'VOL' : 'VARI';
   if (t.closest('.cdisc')) return 'JOG';
   if (t.closest('.dmhit')) return 'DISPLAY';
@@ -1847,7 +1901,7 @@ const jog = { on: false, id: null, a0: 0, t0: 0, vel: 0, bend: false };
 const angOf = e => { const r = disc.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
 disc.addEventListener('pointerdown', e => { e.preventDefault(); if (jog.on) return;
   { const r0 = disc.getBoundingClientRect(); if (Math.hypot(e.clientX - (r0.left + r0.width / 2), e.clientY - (r0.top + r0.height / 2)) < r0.width * .17) return; }   /* the spindle is not a handle */ jog.on = true; jog.id = e.pointerId; try { disc.setPointerCapture(e.pointerId); } catch (_) { } jog.a0 = angOf(e); jog.t0 = e.timeStamp; jog.vel = 0;
-  { const r = disc.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); jog.bend = S.jm === 1 && Math.hypot(dx, dy) > r.width * .36; if (jog.bend) { ui.msg('BEND'); return; } }
+  { const r = disc.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); jog.bend = false; }
   if (SCR.active) { SCR.coast = false; SCR.search = false; SCR.wasPlaying = SCR.motor > 0 || SCR.wasPlaying; } else scrBegin(false, 0); });
 disc.addEventListener('pointermove', e => {
   if (!jog.on || e.pointerId !== jog.id) return;
@@ -1891,6 +1945,7 @@ function drawDisplay0(now) {
   text(t ? 'T' + pad2(Q.idx + 1) + '/' + pad2(Q.list.length) : 'EMPTY', 0, 0, .6);
   { const eb = effBpm(t); let bs = '';
     if (t) bs = eb ? eb.toFixed(1) + 'BPM' : (t.nopk ? '' : '---BPM');
+    if (bs && eb && t.conf < 4) bs += '?';   // low confidence: the grid may be wrong, tap it in
     if (bs) text(bs, 42, 0, eb ? 1 : .4);
     const fl = (S.sync ? ' S' : '') + (S.q ? ' Q' : '') + (S.mix ? ' X' : ''); if (fl && eb) text(fl.trim(), 42 + width(bs) + 6, 0, 1); }
   const md = MODES[S.mode]; text(md, COLS - width(md), 0, S.mode ? 1 : .45);
@@ -1907,10 +1962,15 @@ function drawDisplay0(now) {
   if (msgText && now < msgUntil) text(msgText, 0, 17, 1);
   else if (!t) text('NO DISC  TAP LIB', 0, 17, .85);
   else {
-    if (!t.disp) t.disp = clean(t.name) || 'UNTITLED';
-    const wpx = width(t.disp);
-    if (wpx <= COLS - 12) text(t.disp, 0, 17, .85);
-    else { const cyc = wpx + 30, off = Math.max(0, Math.floor((now - trackStart - 1500) / 70)) % cyc; text(t.disp, -off, 17, .85); text(t.disp, -off + cyc, 17, .85); }
+    if (!t.disp) {
+      const nm = String(t.name).replace(/\.[^.]+$/, ''), k = nm.indexOf(' - ');   // "artist - title": the two take turns on the line
+      t.disp = clean(nm) || 'UNTITLED'; t.dTitle = k > 0 ? clean(nm.slice(k + 3)) : ''; t.dArtist = k > 0 ? clean(nm.slice(0, k)) : '';
+    }
+    let line = t.disp, al = .85;
+    if (t.dTitle && t.dArtist) { const ph = Math.floor((now - trackStart) / 3500) % 2; line = ph ? t.dArtist : t.dTitle; al = ph ? .6 : .9; }
+    const wpx = width(line);
+    if (wpx <= COLS - 12) text(line, 0, 17, al);
+    else { const cyc = wpx + 30, off = Math.max(0, Math.floor((now - trackStart - 1500) / 70)) % cyc; text(line, -off, 17, al); text(line, -off + cyc, 17, al); }
   }
   const y0 = 25, base = 33, frac = dur ? clamp(pos / dur, 0, 1) : 0, ph = Math.floor(frac * 139);
   for (let c = 0; c < 140; c++) {
@@ -1936,17 +1996,29 @@ mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'ghost', text: 'LIB', id: 'lib',
   up: (e, c) => { clearTimeout(lbTo); if (!c && !lbLong) libOpen(); } });
 /* ---- display tap: toggle time / seek on the waveform ---- */
 const hit = el('dmhit', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
-let wdrag = false;
+let wdrag = false, bpmTo = 0, bpmLong = false, bpmDn = false, taps = [], lastTap = 0;
+function tapTempo() {   // tap the BPM on the display along with the music: 4 taps set tempo and grid; hold it to flip x2 / half
+  const t = cur(); if (!t) return;
+  if (!isPlaying()) { ui.msg('TAP WHILE PLAYING', 1400); return; }
+  const now = performance.now(); if (now - lastTap > 1800) taps = []; lastTap = now;
+  taps.push(curPos()); if (taps.length > 9) taps.shift();
+  if (taps.length < 4) { ui.msg('TAP ' + taps.length, 900); return; }
+  const iv = []; for (let i = 1; i < taps.length; i++) iv.push(taps[i] - taps[i - 1]); iv.sort((a, b) => a - b);
+  const m = iv[iv.length >> 1]; if (!(m > .2 && m < 1.5)) { ui.msg('TAP AGAIN', 1000); taps = []; return; }
+  t.bpm = Math.round(60 / m * 10) / 10; t.bm = 0; t.conf = 99; t.off = (((taps[taps.length - 1]) % m) + m) % m; bpmStore(t);
+  ui.msg('TAP ' + t.bpm.toFixed(1) + ' BPM', 1200); if (S.sync) syncApply(true);
+}
 function waveSeek(e) { const r = hit.getBoundingClientRect(), d = audio.duration; if (!isFinite(d)) return; const X = (e.clientX - r.left) / r.width * (COLS * PITCH + PAD_ * 2); seek(clamp((X - PAD_ - 1.5 * PITCH) / (139 * PITCH), 0, 1) * d); }
 hit.addEventListener('pointerdown', e => {
   e.preventDefault(); const r = hit.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
   const xf = (e.clientX - r.left) / r.width;
-  if (y < .2 && xf > .26 && xf < .7 && cur() && cur().bpm) { const t = cur(); t.bm = ((t.bm | 0) + 1) % 3; bpmStore(t); ui.msg(effBpm(t).toFixed(1) + ' BPM'); if (S.sync) syncApply(true); }
+  if (y < .2 && xf > .26 && xf < .7 && cur()) { bpmLong = false; bpmDn = true; clearTimeout(bpmTo); bpmTo = setTimeout(() => { bpmLong = true; const t = cur(); if (t && t.bpm) { t.bm = ((t.bm | 0) + 1) % 3; bpmStore(t); ui.msg(effBpm(t).toFixed(1) + ' BPM'); if (S.sync) syncApply(true); } }, 550); }
   else if (y > .7 && cur()) { wdrag = true; try { hit.setPointerCapture(e.pointerId); } catch (_) { } waveSeek(e); }
   else { S.tmode = S.tmode ? 0 : 1; save(); ui.msg(S.tmode ? 'REMAINING' : 'ELAPSED'); }
 });
 hit.addEventListener('pointermove', e => { if (wdrag) waveSeek(e); });
-hit.addEventListener('pointerup', () => { wdrag = false; }); hit.addEventListener('pointercancel', () => { wdrag = false; });
+hit.addEventListener('pointerup', () => { wdrag = false; clearTimeout(bpmTo); if (bpmDn && !bpmLong) tapTempo(); bpmDn = false; });
+hit.addEventListener('pointercancel', () => { wdrag = false; clearTimeout(bpmTo); bpmDn = false; });
 
 /* ================= library sheet ================= */
 const libEl = el('', chassis, ''); libEl.id = 'lib';
@@ -2042,7 +2114,7 @@ pwr.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); ctx.
 /* ================= ui hooks ================= */
 ui.msg = (t, ms) => { msgText = clean(t); msgUntil = performance.now() + (ms || 1200); };
 ui.trackChanged = soft => { if (!soft) { trackStart = performance.now(); lastRing = -1; } refreshRing(); if (libEl.classList.contains('open')) libBuild(); };
-ui.cuesChanged = () => { cueLed.forEach((l, i) => l.classList.toggle('on', cues[i] != null)); refreshRing(); };
+ui.cuesChanged = () => { cueLed.forEach((l, i) => { l.classList.toggle('on', cues[i] != null); padEls[i].classList.toggle('set', cues[i] != null); }); refreshRing(); };
 ui.loopChanged = () => { ledA.classList.toggle('on', loop.a != null); ledB.classList.toggle('on', loop.b != null); ledLoop.classList.toggle('on', !!loop.on); refreshRing(); };
 ui.playState = p => { hub.classList.toggle('on', p); icon(bPlay, p ? IC.pause : IC.play); ledPlay.classList.toggle('on', p); };
 ui.varChanged = () => { const v = (baseRate() - 1) * 100; varLab.textContent = (v >= -.05 ? '+' : '-') + Math.abs(v).toFixed(1) + '%'; };
@@ -2053,7 +2125,6 @@ let last = performance.now(), lastDraw = 0, uiBusyUntil = 0, dv = 0, ds = 0;
 const DISC_DPS = p => 2000 - 1200 * p;   // like a real CD: the platter turns faster near the hub and slows toward the rim (about 330 to 130 rpm here)
 function step(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
-  { const ip = !!isPlaying(); if (ip !== hissOn) { hissOn = ip; applyFxSoon(); } }
   const playing = isPlaying();
   mixWatch();
   if (loop.on && loop.b != null && playing && curPos() >= loop.b - .02) seek(loop.a);
@@ -2071,7 +2142,7 @@ function step(now) {
     const du = audio.duration || (SCR.buf && SCR.buf.duration) || 0, pr = du > 0 ? clamp(curPos() / du, 0, 1) : 0;
     ds += (DISC_DPS(pr) * dv - ds) * (1 - Math.exp(-dt / .16)); if (Math.abs(ds) < .5) ds = 0; discAng += ds * dt;
   } else { dv = SCR.active ? SCR.rate : dv; ds = 198 * dv; }
-  if (discAng !== lastAng) { cdrot.style.transform = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; lastAng = discAng; }
+  if (discAng !== lastAng) { const tf = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; cdrot.style.transform = tf; if (mixOv) mixOv.style.transform = tf; spn.style.transform = tf; lastAng = discAng; }
   const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? curPos() / d : 0);
   if (!splashing && now - lastDraw >= 50 && now > uiBusyUntil && !document.hidden) { lastDraw = now; drawDisplay(now); }
 }
@@ -2232,7 +2303,7 @@ function landCtx() {
   lMain.appendChild(ic(bRew, bRew)); const pl = ic(bPlay, bPlay, 104); pl.dataset.play = 1; lMain.appendChild(pl); lMain.appendChild(ic(bFf, bFf));
   lMain.appendChild(mk('sep'));
   lMain.appendChild(lkey('CUE', fnBtn('CUE')));
-  /* FX: tape + filter on or all off, in one key */
+  /* FX: crush + filter on or all off, in one key */
   const sw = swAll(), fxOn = () => [1, 2, 3].some(i => sw[i].classList.contains('on'));
   const fk = lkey('FX', document.createElement('div'), { once: 1, st: fxOn });
   fk.addEventListener('pointerdown', () => { const on = fxOn(); [1, 2, 3].forEach(i => { if (sw[i].classList.contains('on') !== (!on && i < 3)) sw[i].dispatchEvent(new PointerEvent('pointerdown', { pointerId: 900 + i, bubbles: true, cancelable: true })); }); landState(); });
@@ -2297,7 +2368,7 @@ function landSync() {
   const vw = window.innerWidth, vh = window.innerHeight, want = vh < 520 && vw > vh * 1.25;
   if (want && !land.on) {
     land.on = true; document.documentElement.classList.add('land');
-    [ringSvg, document.querySelector('.cdwell'), disc, hub].forEach(n => lmv(n, lDisc)); [bz, hit].forEach(n => lmv(n, lOled)); lmv(libEl, landEl);
+    [ringSvg, document.querySelector('.cdwell'), disc, hub, lid].forEach(n => lmv(n, lDisc)); [bz, hit].forEach(n => lmv(n, lOled)); lmv(libEl, landEl);
     landCtx(); landPoke();
   } else if (!want && land.on) {
     land.on = false; clearTimeout(land.to); document.documentElement.classList.remove('land');
