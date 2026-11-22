@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.31
+- Clean-up: the click helper is simplified now that pads, key release and the switches are silent; unused CSS removed (`.led.cuep`, `.led.loopp`, `#lib .lf`). No unused functions or variables found.
+
+## 1.0.30
+- CRUSH and FILTER switches no longer click.
+
+## 1.0.29
+- Landscape: the board packages are calmer (lighter bodies, softer marks, a slightly smaller main chip).
+
+## 1.0.28
+- Board packages sit under the frosted glass again, but stay solid (not see-through); the glass softens them.
+
+## 1.0.27
+- Board packages are solid now: drawn above the frosted glass in both layouts, with darker bodies, pins and markings.
+
+## 1.0.26
+- Board detail: drawn IC packages (bevelled body, pins on four sides, pin-1 dot, markings), test points TP1-TP3, a crystal can and resistor arrays. Landscape gets a QFP and test points on the left, a vertical MCU, crystal and resistors on the right; portrait gets the new packages and a row of test points. All faint, clear of the disc, display and buttons.
+
 ## 1.0.25
 - Cue pads and key release no longer click (it was lost under the music). Keys, switches, disc and drive sounds stay.
 

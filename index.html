@@ -141,7 +141,7 @@ svg polyline{stroke:var(--ink)}
  box-shadow:inset 0 0 0 1px #8f959e,inset 0 0 0 4px #f4f5f7,inset 0 0 0 5px #8f959e;color:#1d1f24;display:none;flex-direction:column;
  padding:22px 30px 20px;font:500 12px/1.3 var(--sans)}
 #lib.open{display:flex}
-#lib .lh,#lib .lf{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+#lib .lh{display:flex;align-items:center;gap:9px;flex:0 0 auto}
 #lib .lh{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #8d939c}
 #lib .lt{font:800 18px/1 var(--mono);letter-spacing:.16em;color:#1d1f24;margin-right:auto}
 #lib .lb,#lib .tg{padding:10px 14px;border-radius:4px;background:linear-gradient(180deg,#f6f7f8 0%,#eceef0 50%,#e2e5e8 100%);color:#1d1f24;
@@ -209,8 +209,6 @@ svg polyline{stroke:var(--ink)}
   clip-path:polygon(0 0,100% 0,100% 100%,22% 100%,0 78%);
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.9),inset 0 -10px 18px rgba(120,132,146,.28);will-change:transform}
 .lidp::after{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95));}
-.led.cuep{background:#fff;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px var(--red)}
-.led.loopp{background:#1d1f24;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px #1d1f24}
 .led.on.big,.led.big{width:9px;height:9px;margin:-4.5px 0 0 -4.5px}
 .btn svg{width:22px;height:16px;fill:var(--ink)}
 .btn.dark svg{fill:#f4f5f7}
@@ -491,14 +489,9 @@ function mkKnob(o) {
   return api;
 }
 /* ---- interface sounds: recorded clicks, straight to the output (not through the player's effects) ---- */
-function uiSnd(kind, tone) {
+function uiSnd() {   // one key click (pads, key release and the CRUSH / FILTER switches stay silent: a click is lost under the music)
   if (!S.clk) return;
-  try {
-    initAudio(); if (!ctx) return; if (ctx.state !== 'running') ctx.resume(); smpInit();
-    if (kind === 'key') smp('click', .5, .95 + Math.random() * .1, 0);
-    /* pads and key release stay silent: a click is lost under the music anyway */
-    else if (kind === 'sw') { smp('click', .7, 1.25, 0); smp('click', .4, 1.5, .03); }
-  } catch (e) { /* ignore */ }
+  try { initAudio(); if (!ctx) return; if (ctx.state !== 'running') ctx.resume(); smpInit(); smp('click', .5, .95 + Math.random() * .1, 0); } catch (e) { /* ignore */ }
 }
 /* ---- buttons ---- */
 function mkBtn(o) {
@@ -516,13 +509,12 @@ function mkBtn(o) {
     pid = e.pointerId;
     try { b.setPointerCapture(pid); } catch (_) { }
     b.classList.add('down');
-    uiSnd(/\b(dark|pad)\b/.test(o.cls || '') && /^[1-8]$/.test(o.text || '') ? 'pad' : 'key', (parseInt(o.text, 10) || 1) - 1);
+    if (!(/\b(dark|pad)\b/.test(o.cls || '') && /^[1-8]$/.test(o.text || ''))) uiSnd();
     if (o.down) o.down(e);
   });
   const up = e => {
     if (e.pointerId !== pid) return;
     pid = null; b.classList.remove('down');
-    if (e.type !== 'pointercancel') uiSnd('rel');
     if (o.up) o.up(e, e.type === 'pointercancel');
   };
   b.addEventListener('pointerup', up);
@@ -532,7 +524,7 @@ function mkBtn(o) {
 function mkSwitch(x, y, on, onChange, label) {
   const s = el('sw' + (on ? ' on' : ''), chassis, 'left:' + x + 'px;top:' + y + 'px'); s.setAttribute('role', 'switch'); s.setAttribute('aria-checked', on ? 'true' : 'false'); if (label) s.setAttribute('aria-label', label);
   el('slot2', s); el('tab', s);
-  s.addEventListener('pointerdown', e => { e.preventDefault(); uiSnd('sw'); s.classList.toggle('on'); s.setAttribute('aria-checked', s.classList.contains('on') ? 'true' : 'false'); onChange(s.classList.contains('on') ? 1 : 0); });
+  s.addEventListener('pointerdown', e => { e.preventDefault(); s.classList.toggle('on'); s.setAttribute('aria-checked', s.classList.contains('on') ? 'true' : 'false'); onChange(s.classList.contains('on') ? 1 : 0); });
   return s;
 }
 
@@ -1578,7 +1570,7 @@ const mixLeds = [4, 8, 16].map((v, i) => led(222 + i * 24, 51, ''));
 [4, 8, 16].forEach((v, i) => lab(String(v), 222 + i * 24, 74, { cls: 'sm' }));
 const mixHit = el('mixhit', chassis, 'left:202px;top:8px;width:88px;height:84px;position:absolute;cursor:pointer;touch-action:none');
 mixHit.setAttribute('role', 'button'); mixHit.setAttribute('aria-label', 'Automix length');
-mixHit.addEventListener('pointerdown', e => { e.preventDefault(); const L = [0, 4, 8, 16]; S.mix = L[(L.indexOf(S.mix) + 1) % 4]; save(); uiSnd('key'); mixSync(); ui.msg(S.mix ? 'AUTOMIX ' + S.mix + 'S' : 'AUTOMIX OFF', 1500); });
+mixHit.addEventListener('pointerdown', e => { e.preventDefault(); const L = [0, 4, 8, 16]; S.mix = L[(L.indexOf(S.mix) + 1) % 4]; save(); uiSnd(); mixSync(); ui.msg(S.mix ? 'AUTOMIX ' + S.mix + 'S' : 'AUTOMIX OFF', 1500); });
 function mixSync() { mixLeds.forEach((l, i) => { const on = S.mix === [4, 8, 16][i]; l.classList.toggle('on', on); l.classList.toggle('cur', on && !!MIX); }); }
 setInterval(mixSync, 250); mixSync();
 
@@ -1923,7 +1915,7 @@ let frostEl = null;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const TR = '#59616c', PAD = '#4f5762';
-  let svg = '';
+  let svg = '', icp = '';
   const path = pts => 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
   function offsetPath(pts, d) {
     return pts.map((p, i) => {
@@ -1954,25 +1946,14 @@ let frostEl = null;
   ([[0, 96, 4, 4, [H]], [500, 276, 4, 4, [[-1, 0]]], [0, 650, 4, 4, [H]], [390, 0, 3, 4, [V]], [250, 1070, 3, 4, [[0, -1]]], [500, 868, 4, 4, [[-1, 0]]]]).forEach(b => bus.apply(null, b));
   for (let i = 0; i < 16; i++) svg += '<circle cx="' + ri(8, 492) + '" cy="' + ri(8, 1062) + '" r="' + (rnd() < .3 ? 2.2 : 1.5) + '" fill="none" stroke="' + PAD + '" stroke-width="1"/>';
   const tx = (x, y, t, r, sz) => { svg += '<text x="' + x + '" y="' + y + '" font-size="' + (sz || 6.2) + '" font-family="ui-monospace,Menlo,Consolas,monospace" letter-spacing=".6" fill="#4f5762"' + (r ? ' transform="rotate(' + r + ' ' + x + ' ' + y + ')"' : '') + '>' + t + '</text>'; };
-  function chip(x, y, w, hh, n, ref) {
-    // an IC footprint: body outline, pins on the long sides, pin-1 dot, reference
-    const vert = hh >= w, pitch = (vert ? hh : w) / n;
-    svg += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" rx="1.5" fill="none" stroke="' + TR + '" stroke-width="1.3"/>';
-    for (let i = 0; i < n; i++) {
-      const p = (i + .5) * pitch;
-      if (vert) svg += '<path d="M' + (x - 4) + ' ' + (y + p) + 'h4M' + (x + w) + ' ' + (y + p) + 'h4" stroke="' + PAD + '" stroke-width="1.4"/>';
-      else svg += '<path d="M' + (x + p) + ' ' + (y - 4) + 'v4M' + (x + p) + ' ' + (y + hh) + 'v4" stroke="' + PAD + '" stroke-width="1.4"/>';
-    }
-    svg += '<circle cx="' + (x + 3.5) + '" cy="' + (y + 3.5) + '" r="1.5" fill="none" stroke="' + PAD + '" stroke-width="1"/>';
-    tx(vert ? x + w + 7 : x, vert ? y + hh / 2 : y + hh + 11, ref, vert ? -90 : 0, 5.6);
-  }
   tx(8, 1040, 'IRIDESCENT  CD IR-01  REV A', -90, 6.6);
-  chip(11, 566, 16, 56, 12, 'U2'); chip(473, 770, 16, 46, 10, 'U4');
+  icp += icSvg(12, 566, 16, 56, { n: 12, l1: 'IR-4060', ref: 'U2', fs: 4.6 }) + icSvg(472, 770, 16, 46, { n: 10, l1: 'IR-7406', ref: 'U4', fs: 4.6 }) + tpSvg(392, 1046, 'TP1') + tpSvg(412, 1046, 'TP2') + tpSvg(432, 1046, 'TP3');
   const pcb = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   pcb.setAttribute('viewBox', '0 0 500 1070'); pcb.setAttribute('class', 'pcb'); pcb.innerHTML = svg;
   chassis.insertBefore(pcb, chassis.firstChild);
   document.documentElement.style.setProperty('--pcb', 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 1070" preserveAspectRatio="none">' + svg + '</svg>') + '")');
   const frost = el('frost', chassis, ''); chassis.insertBefore(frost, pcb.nextSibling); frostEl = frost;
+  const pic = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); pic.setAttribute('viewBox', '0 0 500 1070'); pic.setAttribute('class', 'pcb'); pic.style.opacity = 1; pic.innerHTML = icp; chassis.insertBefore(pic, pcb.nextSibling);   // the packages are solid (not see-through), under the frost
   chassis.querySelectorAll('.knob,.btn,.sw,.vfader,.hubbtn').forEach(c => {
     const l = parseFloat(c.style.left), t = parseFloat(c.style.top), w = parseFloat(c.style.width) || c.offsetWidth, h = parseFloat(c.style.height) || c.offsetHeight;
     if (isNaN(l) || isNaN(t)) return;
@@ -2141,7 +2122,7 @@ function drawDisplay0(now) {
 }
 let lbLong = false, lbTo = 0;
 mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'ghost', text: 'LIB', id: 'lib',
-  down: () => { lbLong = false; clearTimeout(lbTo); lbTo = setTimeout(() => { lbLong = true; S.clk = S.clk ? 0 : 1; save(); motor(S.clk && isPlaying()); ui.msg('CLICKS ' + (S.clk ? 'ON' : 'OFF'), 1400); uiSnd('key'); }, 650); },
+  down: () => { lbLong = false; clearTimeout(lbTo); lbTo = setTimeout(() => { lbLong = true; S.clk = S.clk ? 0 : 1; save(); motor(S.clk && isPlaying()); ui.msg('CLICKS ' + (S.clk ? 'ON' : 'OFF'), 1400); uiSnd(); }, 650); },
   up: (e, c) => { clearTimeout(lbTo); if (!c && !lbLong) libOpen(); } });
 /* ---- display tap: toggle time / seek on the waveform ---- */
 const hit = el('dmhit', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
@@ -2454,15 +2435,47 @@ function landPoke() { if (!land.on) return; landShow(true); landState(); clearTi
 landEl.addEventListener('pointerdown', e => { land.down = { t: e.timeStamp, x: e.clientX, y: e.clientY }; if (lBar.contains(e.target)) landPoke(); }, true);
 landEl.addEventListener('pointerup', e => { const d = land.down; land.down = null; if (d && e.timeStamp - d.t < 300 && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 10) landPoke(); }, true);
 
+/* a drawn IC package: shadow, bevelled body, pins, pin-1 dot, marking; quad = pins on four sides (QFP), else two long sides (SOIC) */
+function icSvg(x, y, w, h, o) {
+  const MONO = 'ui-monospace,Menlo,monospace', vert = h > w; let r = '';
+  r += '<rect x="' + (x + 1.2) + '" y="' + (y + 1.8) + '" width="' + w + '" height="' + h + '" rx="2.4" fill="rgba(55,66,82,.16)"/>';
+  const n = o.n || 8, quad = !!o.quad;
+  const pin = (px, py, pw, ph) => '<rect x="' + px.toFixed(1) + '" y="' + py.toFixed(1) + '" width="' + pw + '" height="' + ph + '" rx=".4" fill="#848c97"/>';
+  if (quad) { const st = w / n; for (let i = 0; i < n; i++) { const q = (i + .5) * st - .55; r += pin(x + q, y - 3.4, 1.1, 3.4) + pin(x + q, y + h, 1.1, 3.4) + pin(x - 3.4, y + q * h / w, 3.4, 1.1) + pin(x + w, y + q * h / w, 3.4, 1.1); } }
+  else if (vert) { const st = h / n; for (let i = 0; i < n; i++) { const q = y + (i + .5) * st - .55; r += pin(x - 3.4, q, 3.4, 1.1) + pin(x + w, q, 3.4, 1.1); } }
+  else { const st = w / n; for (let i = 0; i < n; i++) { const q = x + (i + .5) * st - .55; r += pin(q, y - 3.4, 1.1, 3.4) + pin(q, y + h, 1.1, 3.4); } }
+  r += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="2.4" fill="#d3d8df" stroke="#8c949f" stroke-width=".9"/>';
+  r += '<rect x="' + (x + 1.6) + '" y="' + (y + 1.6) + '" width="' + (w - 3.2) + '" height="' + (h - 3.2) + '" rx="1.5" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1"/>';
+  r += '<rect x="' + (x + 2.6) + '" y="' + (y + 2.6) + '" width="' + (w - 5.2) + '" height="' + (h - 5.2) + '" rx="1" fill="none" stroke="rgba(88,98,112,.28)" stroke-width=".6"/>';
+  r += '<circle cx="' + (x + 6) + '" cy="' + (y + 6) + '" r="1.5" fill="#b3bac3" stroke="rgba(88,98,112,.4)" stroke-width=".5"/>';
+  const cxm = x + w / 2, cym = y + h / 2, rot = vert ? ' transform="rotate(-90 ' + cxm + ' ' + cym + ')"' : '';
+  const fs = o.fs || 5.2;
+  if (o.l1) r += '<text x="' + cxm + '" y="' + (cym + (o.l2 ? -.6 : fs * .35)) + '" font-size="' + fs + '" font-family="' + MONO + '" font-weight="700" letter-spacing=".5" fill="#555e6a" text-anchor="middle"' + rot + '>' + o.l1 + '</text>';
+  if (o.l2) r += '<text x="' + cxm + '" y="' + (cym + fs * 1.15) + '" font-size="' + (fs * .82) + '" font-family="' + MONO + '" letter-spacing=".4" fill="#6f7782" text-anchor="middle"' + rot + '>' + o.l2 + '</text>';
+  if (o.ref) r += '<text x="' + (vert ? x + w + 9 : x) + '" y="' + (vert ? cym : y + h + 10) + '" font-size="5.2" font-family="' + MONO + '" letter-spacing=".5" fill="#6f7782"' + (vert ? ' transform="rotate(-90 ' + (x + w + 9) + ' ' + cym + ')" text-anchor="middle"' : '') + '>' + o.ref + '</text>';
+  return r;
+}
+function xtalSvg(x, y, s, ref) {   // a crystal can: rounded square with a ring
+  const MONO = 'ui-monospace,Menlo,monospace';
+  return '<rect x="' + (x + 1) + '" y="' + (y + 1.6) + '" width="' + s + '" height="' + s + '" rx="5" fill="rgba(55,66,82,.14)"/><rect x="' + x + '" y="' + y + '" width="' + s + '" height="' + s + '" rx="5" fill="#d6dbe2" stroke="#8c949f" stroke-width=".9"/><rect x="' + (x + 1.6) + '" y="' + (y + 1.6) + '" width="' + (s - 3.2) + '" height="' + (s - 3.2) + '" rx="3.6" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1"/><circle cx="' + (x + s / 2) + '" cy="' + (y + s / 2) + '" r="' + (s * .27) + '" fill="none" stroke="rgba(88,98,112,.4)" stroke-width=".8"/><text x="' + (x + s / 2) + '" y="' + (y + s + 10) + '" font-size="5.2" font-family="' + MONO + '" letter-spacing=".5" fill="#6f7782" text-anchor="middle">' + ref + '</text>';
+}
+function resSvg(x, y, n, ref) {   // a resistor array: small bodies in a row with end pads
+  let r = ''; for (let i = 0; i < n; i++) { const xx = x + i * 11; r += '<rect x="' + xx + '" y="' + y + '" width="8" height="4.4" rx="1" fill="#cdd2d9" stroke="#8c949f" stroke-width=".7"/><rect x="' + xx + '" y="' + y + '" width="1.8" height="4.4" fill="#9aa2ad"/><rect x="' + (xx + 6.2) + '" y="' + y + '" width="1.8" height="4.4" fill="#9aa2ad"/>'; }
+  return r + '<text x="' + x + '" y="' + (y + 12) + '" font-size="5" font-family="ui-monospace,Menlo,monospace" letter-spacing=".4" fill="#6f7782">' + ref + '</text>';
+}
+function tpSvg(x, y, ref) {   // a test point: ring pad and a label
+  return '<circle cx="' + x + '" cy="' + y + '" r="3.6" fill="#d6dbe2" stroke="#8c949f" stroke-width=".9"/><circle cx="' + x + '" cy="' + y + '" r="1.3" fill="#9aa2ad"/><text x="' + x + '" y="' + (y + 11) + '" font-size="5" font-family="ui-monospace,Menlo,monospace" letter-spacing=".4" fill="#6f7782" text-anchor="middle">' + ref + '</text>';
+}
 /* the board shows through here too, a little: traces and a few chips at the two sides, clear of the disc, display and bar */
 const lPcb = document.createElementNS(NS, 'svg'); lPcb.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:.26'; landEl.insertBefore(lPcb, landEl.firstChild);
+const lIc = document.createElementNS(NS, 'svg'); lIc.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none'; 
 /* plastic / glass over the board */
-const lFrost = mk(''); lFrost.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.04) 38%,rgba(255,255,255,.16) 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),inset 0 0 50px rgba(255,255,255,.3)'; landEl.insertBefore(lFrost, lPcb.nextSibling);
+const lFrost = mk(''); lFrost.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.04) 38%,rgba(255,255,255,.16) 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),inset 0 0 50px rgba(255,255,255,.3)'; landEl.insertBefore(lIc, lPcb.nextSibling); landEl.insertBefore(lFrost, lIc.nextSibling);   // the packages are solid (not see-through), under the glass
 function landPcb(vw, vh, sl, sr, cx, sd) {
   let seed = 505; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296, ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const TR = '#59616c', PD = '#4f5762', R = 184 * sd + 14, fl = cx - R - sl, fr = vw - sr - cx - R;   // room each side of the disc well
-  if (fl < 50 && fr < 50) { lPcb.textContent = ''; return; }
-  let o = '';
+  if (fl < 50 && fr < 50) { lPcb.textContent = ''; lIc.textContent = ''; return; }
+  let o = '', ic = '';
   const bus = (x, y, dir, n, len) => {
     // a bundle: straight, a 45 degree jog, straight again
     const l1 = len * .55, j = ri(14, 24), l2 = len - l1 - j, up = rnd() < .5 ? -1 : 1, pts = [[0, 0], [l1, 0], [l1 + j, up * j], [l1 + j + l2, up * j]];
@@ -2473,18 +2486,12 @@ function landPcb(vw, vh, sl, sr, cx, sd) {
       if (rnd() < .5) o += '<circle cx="' + d[0][0].toFixed(1) + '" cy="' + d[0][1].toFixed(1) + '" r="1.5" fill="' + PD + '"/>';
     }
   };
-  const chip = (x, y, w, h, n, ref) => {
-    o += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1.5" fill="none" stroke="' + TR + '" stroke-width="1.1"/>';
-    const pitch = h / n; for (let i = 0; i < n; i++) { const q = y + (i + .5) * pitch; o += '<path d="M' + (x - 4) + ' ' + q + 'h4M' + (x + w) + ' ' + q + 'h4" stroke="' + PD + '" stroke-width="1.2"/>'; }
-    o += '<circle cx="' + (x + 3.2) + '" cy="' + (y + 3.2) + '" r="1.3" fill="none" stroke="' + PD + '" stroke-width=".9"/>';
-    o += '<text x="' + (x + w + 8) + '" y="' + (y + h / 2) + '" font-size="5.4" font-family="ui-monospace,Menlo,monospace" letter-spacing=".6" fill="' + PD + '" transform="rotate(-90 ' + (x + w + 8) + ' ' + (y + h / 2) + ')" text-anchor="middle">' + ref + '</text>';
-  };
   const LL = Math.min(fl * .85, 190), LR = Math.min(fr * .85, 190);   // the traces start at the very edge of the screen, under the notch too
-  if (fl >= 50) { bus(0, vh * .34, 1, 4, LL + sl); bus(0, vh * .6, 1, 5, (LL + sl) * .9); bus(0, vh * .84, 1, 3, (LL + sl) * .7); if (fl >= 70) chip(14, vh * .46, 14, 34, 8, 'U1'); }
-  if (fr >= 50) { bus(vw, vh * .42, -1, 5, LR + sr); bus(vw, vh * .68, -1, 4, (LR + sr) * .85); bus(vw, vh * .9, -1, 3, (LR + sr) * .6); if (fr >= 70) chip(vw - 28, vh * .52, 14, 44, 10, 'U2'); }
-  for (let i = 0; i < 14; i++) { const left = rnd() < .5, w = left ? fl : fr; if (w < 50) continue; const x = left ? ri(8, sl + w) : ri(vw - sr - w, vw - 8); o += '<circle cx="' + x + '" cy="' + ri(10, vh - 10) + '" r="' + (rnd() < .3 ? 2 : 1.4) + '" fill="none" stroke="' + PD + '" stroke-width="1"/>'; }
+  if (fl >= 50) { bus(0, vh * .34, 1, 4, LL + sl); bus(0, vh * .6, 1, 5, (LL + sl) * .9); bus(0, vh * .84, 1, 3, (LL + sl) * .7); if (fl >= 100) { ic += icSvg(18, vh * .36, 48, 48, { quad: 1, n: 9, l1: 'IR-1200', l2: 'SERVO/DSP', ref: 'U1', fs: 6 }) + resSvg(18, vh * .36 + 70, 3, 'R1-R3'); ic += tpSvg(26, vh * .66, 'TP1') + tpSvg(46, vh * .66, 'TP2') + tpSvg(66, vh * .66, 'TP3'); } else if (fl >= 70) ic += icSvg(16, vh * .44, 15, 40, { n: 8, l1: 'IR-4060', ref: 'U1', fs: 4.8 }); }
+  if (fr >= 50) { bus(vw, vh * .42, -1, 5, LR + sr); bus(vw, vh * .68, -1, 4, (LR + sr) * .85); bus(vw, vh * .9, -1, 3, (LR + sr) * .6); if (fr >= 100) { ic += icSvg(vw - 36, vh * .3, 20, 62, { n: 10, l1: 'IR-7406', l2: 'MCU', ref: 'U2', fs: 5 }); ic += xtalSvg(vw - 78, vh * .6, 24, 'XT1') + resSvg(vw - 98, vh * .8, 4, 'R4-R7') ; } else if (fr >= 70) ic += icSvg(vw - 30, vh * .5, 15, 44, { n: 10, l1: 'IR-7406', ref: 'U2', fs: 4.8 }); }
+  for (let i = 0; i < 14; i++) { const left = rnd() < .5, w = left ? fl : fr; if (w < 50) continue; const x = left ? ri(8, sl + w) : ri(vw - sr - w, vw - 8), yy = ri(10, vh - 10); if ((x < 110 || x > vw - 110) && yy > vh * .26 && yy < vh * .9) continue; o += '<circle cx="' + x + '" cy="' + yy + '" r="' + (rnd() < .3 ? 2 : 1.4) + '" fill="none" stroke="' + PD + '" stroke-width="1"/>'; }
   o += '<text x="' + (sl + 16) + '" y="' + (vh - 12) + '" font-size="5.8" font-family="ui-monospace,Menlo,monospace" letter-spacing=".6" fill="' + PD + '">IRIDESCENT  CD IR-01  REV A</text>';
-  lPcb.setAttribute('viewBox', '0 0 ' + vw + ' ' + vh); lPcb.innerHTML = o;
+  lPcb.setAttribute('viewBox', '0 0 ' + vw + ' ' + vh); lPcb.innerHTML = o; lIc.setAttribute('viewBox', '0 0 ' + vw + ' ' + vh); lIc.innerHTML = ic.replace(/#d3d8df/g, '#dfe3e8').replace(/#8c949f/g, '#adb4be').replace(/#848c97/g, '#a6aeb8').replace(/#555e6a/g, '#848d98').replace(/#6f7782/g, '#98a0ab').replace(/#d6dbe2/g, '#e0e4e9').replace(/#cdd2d9/g, '#d8dce2').replace(/font-weight="700"/g, '');   // calmer in landscape: lighter bodies, softer marks
 }
 function landLayout() {
   const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(saProbe);
