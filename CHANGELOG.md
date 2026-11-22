@@ -1,0 +1,84 @@
+# Changelog
+
+## 1.0.13
+
+- The CRUSH and FILTER switches have a taller invisible touch area (46 pt tall on a 390 pt wide phone, was about 34 pt). The look is unchanged.
+
+## 1.0.12
+
+- Label editor in landscape: RESET and OK sit right under the style buttons instead of at the bottom of the column.
+
+## 1.0.11
+
+- Fix: a disc longer than about 11 minutes never started playing (decode-first waited for a buffer that was never kept, and decoded again and again, up to 800 MB). Discs over 10 minutes are now never decoded: they play straight from the audio element (no waveform or BPM for them, no memory spike). A decoded buffer that is not kept no longer blocks play either.
+
+## 1.0.10
+
+- Label editor in landscape: three columns (disc, text lines, styles with RESET / OK) that fit a phone screen without scrolling.
+
+## 1.0.9
+
+- Label editor is bigger: larger preview disc, taller input lines with 18 px type (iOS no longer zooms the page when a line is focused), larger style buttons in four columns, bigger RESET / OK.
+
+## 1.0.8
+
+- Clean-up: the dead CSS of the old help overlay, the unused lite-mode and scale rules, and three unused JS leftovers are gone (about 3 KB). Nothing visible changes.
+- Label style H also keeps its title clear of the printed rim text.
+- All pictures in `screens/` are re-shot from this version.
+
+## 1.0.7
+
+- The white gloss band and its motion-permission prompt are gone; the rainbow sheen (IRIS) is the only reflection now.
+- Label style H: the handwritten title and artist are placed by the disc's width at their height, so they no longer cross the rim.
+
+## 1.0.6
+
+- Rainbow sheen: a spectrum layer above the label that stays put against the light while the disc turns under it, drifts slowly with the spin and follows your finger. It is its own switch (IRIS, next to JOG), separate from the white gloss, needs no permission and moves on the compositor only.
+
+## 1.0.5
+
+- Labels: long titles and artists are squeezed instead of cut with an ellipsis; style H keeps clear of the hub; the bar in style C follows the artist block.
+- Cover art: the picture embedded in MP3 / FLAC / M4A files is shown on the lock screen and in the media controls.
+- New label style ART (in the label editor): the cover fills the disc. It is never chosen automatically; AUTO keeps the printed styles.
+
+## 1.0.4
+
+- The spindle is now a low, tidy motor cap: a thin metal rim, three small flush clamps and a centre pin.
+
+## 1.0.3
+
+- Loading a disc now works like a tape deck: the file is decoded first (DECODING), then it plays from the buffer. The sound no longer starts on the media element and gets handed over to the scratch engine in the middle of playback, which is where the freezes and the silent moments came from.
+- A silent looping element keeps playback alive with the screen locked.
+- Files over 110 MB still play straight from the media element.
+
+## 1.0.2
+
+- The centre of the disc is drawn like a real CD: a dark clamping band, a light rim, a clear zone with a stacking ring, and the three-claw spindle on top.
+
+## 1.0.1
+
+- Long artist names now wrap onto a second line on the disc labels instead of being cut.
+- Loading a disc shows DECODING while the pitch / scratch engine prepares and READY when it is done; the heavy steps yield to the screen between each other.
+
+## 1.0
+
+First complete release.
+
+**Player**
+- Buffer engine with smooth VARISPEED, LOCK (WSOLA pitch lock), scratch and tape-style search; the plain `<audio>` path stays for long files and the locked screen.
+- 8 hot cues per file, A-B loop with points that snap to the beat grid, MAIN CUE, beat jump, auto loops and loop roll.
+- BPM and beat grid detection (cached), SYNC, QUANTIZE, tap tempo with a `?` mark when the detector is unsure.
+- AUTOMIX (4 / 8 / 16 s): the next disc is decoded ahead and crossfades on the beat grid. Heavy track pairs skip it to protect memory on iPhone.
+- Play modes: normal, repeat one, repeat all, shuffle. Hold PLAY to stop.
+- FX: digital CRUSH and a one-knob FILTER; fixed output level and limiter.
+
+**Disc and look**
+- Translucent disc over a PCB, a recessed well, a three-claw spindle that turns with the disc.
+- Eight printed label styles (classic, banner, technical, dotted, ruled card, rings, stripe, handwritten) plus blank, editable per disc.
+- Disc change: a frosted shutter slides over the disc while the label changes; the sound fades out and back in.
+- Group captions on the panel, a grouped top row with the AUTOMIX lamps, PADS / FX pages.
+- Landscape mode with a frosted control bar and group captions; portrait, tablet and desktop layouts.
+
+**Stability**
+- Disc analysis runs in short slices, so the screen stays responsive after loading a disc.
+- Next-disc prefetch is skipped for heavy tracks (iOS memory), the master level can no longer stay muted after a change.

@@ -40,7 +40,6 @@ html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-beh
 .haze{position:absolute;pointer-events:none;border-radius:10px;background:rgba(232,235,238,.92);box-shadow:0 0 9px 6px rgba(232,235,238,.9)}
 .haze.round{border-radius:50%;box-shadow:0 0 10px 8px rgba(232,235,238,.92)}
 .groove{position:absolute;left:0;right:0;height:1px;background:var(--line)}
-.vline{position:absolute;width:1px;background:var(--line)}
 .screw{position:absolute;width:14px;height:14px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#f7f8f9,#b7bcc3 60%,#7d838c);
   box-shadow:0 1px 0 rgba(255,255,255,.8),0 2px 3px rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.3)}
@@ -119,7 +118,7 @@ html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-beh
 .btn.grey{background:linear-gradient(180deg,rgba(211,215,220,.66) 0%,rgba(197,202,208,.58) 50%,rgba(184,189,196,.54) 100%);
   box-shadow:0 2px 0 rgba(139,145,154,.9),0 4px 6px rgba(50,56,66,.22),inset 0 0 0 1px rgba(170,176,184,.9),inset 0 1px 0 rgba(255,255,255,.55)}
 .sw{position:absolute;width:44px;height:20px;margin:-10px 0 0 -22px;touch-action:none;cursor:pointer}
-.sw::before{content:"";position:absolute;inset:-12px -10px}
+.sw::before{content:"";position:absolute;inset:-20px -9px}   /* hit area: at least 44 pt tall on a 390 pt wide phone */
 .sw .slot2{position:absolute;inset:0;border-radius:3px;background:#17181b;box-shadow:inset 0 1px 3px #000,0 0 0 1.5px #a3a9b1}
 .sw .tab{position:absolute;top:-3px;left:2px;width:20px;height:26px;border-radius:3px;
   background:linear-gradient(90deg,#fdfdfe,#e3e5e9);box-shadow:0 2px 3px rgba(50,56,66,.4),inset 0 0 0 1px #b3b9c1;transition:left .09s ease-out}
@@ -135,22 +134,7 @@ svg polyline{stroke:var(--ink)}
   background:radial-gradient(circle at 38% 28%,#555861,#25272d 70%);box-shadow:0 8px 14px rgba(0,0,0,.6),inset 0 1px 1px rgba(255,255,255,.4),0 0 0 2px #0e0f12,0 0 0 3px rgba(255,255,255,.25)}
 #power .pw svg{width:36px;height:36px;stroke:#ff5a45;filter:drop-shadow(0 0 6px rgba(224,90,70,.9))}
 #power small{display:block;font-weight:600;letter-spacing:.12em;color:#9ea0a8;text-align:center;text-transform:none;font-size:12px}
-#help{position:absolute;inset:0;z-index:70;border-radius:18px;background-color:#e6e9ec;background-image:var(--sheet),var(--pcb);background-size:100% 100%;
-  box-shadow:inset 0 0 0 1px #8f959e,inset 0 0 0 4px #f4f5f7,inset 0 0 0 5px #8f959e;color:#1d1f24;padding:26px 34px;display:none;
-  font:500 12.6px/1.38 var(--sans)}
-#help.open{display:block}
-#help h3{margin:0 0 7px;font:900 11px/1 var(--mono);letter-spacing:.2em;color:#c4281a;padding-bottom:6px;border-bottom:1px solid #8d939c}
-#help p{margin:0 0 6px;color:#2f3036}
-#help b{color:#111216}
-#help i{color:#c4281a;font-style:normal;font-weight:700}
-#help .exp{display:flex;gap:10px;margin-top:10px}
-#help .x{position:absolute;right:26px;top:18px;font:800 11px/1 var(--mono);color:#4a4f58;letter-spacing:.14em}
 @keyframes redflash{50%{opacity:.15}}
-/* lite mode: cheaper rendering for older phones */
-html.lite .haze,html.lite .haze.round{box-shadow:none}
-html.lite #chassis,html.lite .rim{box-shadow:0 8px 14px rgba(0,0,0,.5)}
-html.lite #power{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(8,9,12,.94)}
-html.lite .knob.st .krot{transition:none}
 /* library sheet — frosted plastic over the board */
 [data-id=lib]{font:800 12px/1 var(--mono);letter-spacing:.2em}
 #lib{position:absolute;inset:0;z-index:68;border-radius:18px;background-color:#e6e9ec;background-image:var(--sheet),var(--pcb);background-size:100% 100%;
@@ -172,32 +156,6 @@ html.lite .knob.st .krot{transition:none}
 #lib .row.cur{background:linear-gradient(180deg,#2a2c31,#141518);box-shadow:0 2px 0 #000,0 3px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2)}
 #lib .lb,#lib .tg{background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(236,241,246,.6));box-shadow:0 0 0 1px rgba(255,255,255,.85),0 2px 6px rgba(60,72,88,.3),inset 0 1px 0 #fff,inset 0 -5px 8px rgba(150,170,190,.18)}
 #lib .lb:active{box-shadow:0 0 0 1px rgba(255,255,255,.85),0 1px 2px rgba(60,72,88,.3),inset 0 1px 3px rgba(60,72,88,.25)}
-/* tutorial */
-#help .tabs{display:flex;gap:7px;margin:0 0 14px;padding-right:110px}
-#help .tabs span{padding:9px 14px;border-radius:4px;background:linear-gradient(180deg,#e0e3e7,#d3d7dc);color:#4a4f58;font:800 10.5px/1 var(--mono);letter-spacing:.14em;
- box-shadow:inset 0 0 0 1px #aab0b8;cursor:pointer;user-select:none;-webkit-user-select:none}
-#help .tabs span.on{background:linear-gradient(180deg,#2a2c31,#141518);color:#f4f5f7;box-shadow:0 2px 0 #000,0 3px 5px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
-#help .fig{flex:0 0 440px}
-#help .two{display:flex;gap:26px;align-items:flex-start;width:100%}
-#help .two .fig.sm{flex:0 0 280px}
-#help .steps{margin:0;padding:0;list-style:none;counter-reset:s;flex:1}
-#help .steps li{counter-increment:s;position:relative;padding:0 0 9px 32px;color:#2f3036}
-#help .steps.tight li{padding-bottom:7px}
-#help .steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:21px;height:21px;border-radius:4px;background:#cb4a36;color:#fff;font:900 12px/21px var(--mono);text-align:center;box-shadow:0 1px 0 #a3200f}
-#help .cap{margin:6px 0 0;font:600 11px/1.35 var(--sans);color:#4a4f58}
-#help .cap.l{margin:8px 0 0}
-#help .strip{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;margin:8px 0 0;width:100%}
-#help .sc{display:flex;flex-direction:column;align-items:center;padding:3px 0 2px;border-radius:4px;background:linear-gradient(180deg,#f6f7f8,#e2e5e8);box-shadow:0 2px 0 #a8aeb6,inset 0 1px 0 #fff}
-#help .sc em{font:700 8px/1 var(--mono);color:#6a6c75;font-style:normal}
-#help .sc b{font:800 11px/1.4 var(--mono);color:#1d1f24}#help .sc b sub{font-size:7px;color:#6a6c75}
-#help .sc u{height:9px;font:700 10px/9px Arial;color:#3a3d4d;text-decoration:none}
-#help .sc.r{opacity:.55}#help .sc.t{background:linear-gradient(180deg,#d3d5dc,#b3b6bf)}
-#help .exp{margin:14px 0}
-
-#help .lang{position:absolute;right:130px;top:12px;display:flex;gap:5px}
-#help .lang span{padding:6px 9px;border-radius:4px;background:linear-gradient(180deg,#e0e3e7,#d3d7dc);color:#4a4f58;font:800 10px/1 var(--mono);letter-spacing:.12em;
- box-shadow:inset 0 0 0 1px #aab0b8;cursor:pointer;user-select:none;-webkit-user-select:none}
-#help .lang span.on{background:linear-gradient(180deg,#2a2c31,#141518);color:#f4f5f7;box-shadow:0 2px 0 #000,0 3px 5px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
 
 /* ================= DECK: portrait stage + player organs ================= */
 #stage{width:500px;height:1070px}
@@ -212,8 +170,6 @@ html.lite .knob.st .krot{transition:none}
   background:repeating-linear-gradient(180deg,rgba(0,0,0,.2) 0 1.2px,rgba(255,255,255,.75) 1.2px 3.2px)}
 .vtab i{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--red);z-index:2}
 .vfader.act .vtab{transform:translateY(1px);box-shadow:0 2px 3px rgba(50,56,66,.45),inset 0 0 0 1px #9aa0a8}
-.vscale{position:absolute;pointer-events:none;overflow:visible}
-.vscale line{stroke:var(--ink2);stroke-width:1.2px;stroke-linecap:round}
 
 .cdwell{position:absolute;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 50% 36%,rgba(120,130,142,.42),rgba(236,239,242,.7) 78%);
@@ -223,22 +179,20 @@ html.lite .knob.st .krot{transition:none}
 .cdrot.nx{pointer-events:none;z-index:1;transition:none}
 .cdisc{position:absolute;border-radius:50%;touch-action:none;cursor:grab;overflow:hidden;
   box-shadow:0 6px 11px rgba(40,50,62,.4),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8)}
-.cdisc::before{content:"";position:absolute;inset:-50%;pointer-events:none;z-index:3;will-change:transform;
-  background:linear-gradient(122deg,rgba(255,255,255,0) 41%,rgba(255,255,255,.7) 50%,rgba(255,255,255,0) 59%);
-  transform:translate3d(calc(var(--gx,-34) * 1px),0,0) rotate(calc(var(--gr,0) * 1deg))}   /* the gloss moves on the compositor only: no repaint while the phone tilts */
 .cdrot{position:absolute;inset:0;border-radius:50%;will-change:transform;
   background:
    repeating-radial-gradient(circle,rgba(70,80,92,.07) 0 .8px,rgba(255,255,255,.1) .8px 1.8px),
    conic-gradient(from 25deg,rgba(255,222,208,.66),rgba(212,234,244,.66),rgba(246,230,246,.66),rgba(202,240,235,.66),rgba(255,226,214,.66),rgba(226,214,244,.66),rgba(255,222,208,.66))}
+.cdiris{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:1;will-change:transform;
+  background:conic-gradient(from 18deg,rgba(255,255,255,0) 0deg,rgba(255,112,190,.30) 22deg,rgba(124,160,255,.32) 46deg,rgba(84,232,214,.30) 68deg,rgba(255,240,140,.26) 90deg,rgba(255,255,255,0) 118deg,rgba(255,255,255,0) 186deg,rgba(150,255,190,.24) 212deg,rgba(255,170,120,.30) 238deg,rgba(210,140,255,.30) 262deg,rgba(110,200,255,.26) 286deg,rgba(255,255,255,0) 312deg,rgba(255,255,255,0) 360deg)}   /* spectrum wedges that stay put against the light; only the transform moves, so no repaint */
 .cdrot::after{content:"";position:absolute;left:50%;top:5px;width:6px;height:16px;margin-left:-3px;border-radius:2px;background:var(--red);
   box-shadow:0 0 6px rgba(203,74,54,.5)}
 .cdrot .lbl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .cdhole{position:absolute;inset:34%;border-radius:50%;pointer-events:none;z-index:2;
-  background:radial-gradient(circle,rgba(255,255,255,.9) 0 30%,rgba(255,255,255,.5) 33% 66%,rgba(150,160,172,.55) 69%);
-  box-shadow:0 0 0 1px #9aa0a8,inset 0 0 0 2px rgba(255,255,255,.9)}
+  background:radial-gradient(circle closest-side,transparent 0 55%,rgba(112,120,130,.85) 55% 56.6%,rgba(255,255,255,.94) 56.6% 70%,rgba(105,113,123,.7) 70% 71.6%,rgba(250,251,252,.9) 71.6% 82%,#9eb0bf 82% 85.5%,#1f2524 85.5% 100%);
+  box-shadow:0 0 0 1px #6b727b,0 0 0 2px rgba(255,255,255,.7)}
 .hubbtn{position:absolute;border-radius:50%;z-index:6;touch-action:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 38% 28%,#3a3d44,#16171a 70%);
-  box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,inset 0 1px 1px rgba(255,255,255,.3)}
+  background:none;box-shadow:none}
 .hubbtn::before{content:"";position:absolute;inset:-16px}
 .hubbtn svg{width:34px;height:34px;fill:#ff5a45;filter:drop-shadow(0 0 5px rgba(224,90,70,.8))}
 .hubbtn.on{box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,inset 0 1px 1px rgba(255,255,255,.3)}
@@ -261,17 +215,29 @@ html.lite .knob.st .krot{transition:none}
 #lib .lt{font-size:15px;letter-spacing:.12em}
 #lib .lb{padding:10px 9px;font-size:10px;letter-spacing:.1em}
 #lib{padding:26px 24px 20px}
-#lbed{display:none;position:absolute;inset:0;z-index:5;background:#d5d9de;padding:26px 24px 20px;flex-direction:column;gap:10px;overflow:auto}
+#lbed{display:none;position:absolute;inset:0;z-index:5;background:#d5d9de;padding:28px 28px 24px;flex-direction:column;gap:12px;overflow:auto}
 #lib.ed #lbed{display:flex}
-#lbed .pv{position:relative;width:236px;height:236px;margin:2px auto 4px;border-radius:50%;box-shadow:0 5px 9px rgba(40,50,62,.38),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8);flex:0 0 auto}
+#lbed .pv{position:relative;width:272px;height:272px;margin:2px auto 8px;border-radius:50%;box-shadow:0 5px 9px rgba(40,50,62,.38),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8);flex:0 0 auto}
 #lbed .pv .cdrot{animation:none}
-#lbed .pv .cdhole{position:absolute;inset:36%;border-radius:50%;background:radial-gradient(circle,#e9ecef 0 38%,rgba(255,255,255,.55) 42% 70%,rgba(150,160,172,.55) 74%);box-shadow:0 0 0 1px #9aa0a8}
-#lbed label{font:800 9px/1 var(--mono);letter-spacing:.14em;color:#5f616a;display:block;margin:2px 0 4px}
-#lbed input{width:100%;box-sizing:border-box;font:700 14px var(--mono);color:#2a2d33;background:#eef0f2;border:1px solid #8d939c;border-radius:6px;padding:9px 8px;outline:none}
-#lbed .tp{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+#lbed .pv .cdhole{position:absolute;inset:36%;border-radius:50%;background:radial-gradient(circle closest-side,#e9ecef 0 38%,rgba(105,113,123,.7) 38% 40%,rgba(250,251,252,.92) 40% 82%,#9eb0bf 82% 85.5%,#1f2524 85.5% 100%);box-shadow:0 0 0 1px #6b727b}
+#lbed label{font:800 11px/1 var(--mono);letter-spacing:.14em;color:#5f616a;display:block;margin:4px 0 6px}
+#lbed input{width:100%;box-sizing:border-box;font:700 18px var(--mono);color:#2a2d33;background:#eef0f2;border:1px solid #8d939c;border-radius:8px;padding:14px 12px;outline:none}
+#lbed .tp{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+#lbed .tp .lb,#lbed .ac .lb{padding:15px 6px;font-size:13px;border-radius:6px}
 #lbed .lb.on{background:#cb4a36;color:#fff}
 #lbed .tp .lb,#lbed .ac .lb{text-align:center}
-#lbed .ac{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+#lbed .rc{display:flex;flex-direction:column;gap:12px}
+#lbed .ac{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+#lbed .ac .lb{padding:18px 6px;font-size:14px}
+html.land #lbed{display:none;grid-template-columns:230px 1fr 1fr;grid-auto-rows:min-content;column-gap:22px;row-gap:10px;padding:18px 24px;align-content:start;overflow:auto}
+html.land #lib.ed #lbed{display:grid}
+html.land #lbed>.lt{grid-column:1;grid-row:1}
+html.land #lbed>.pv{grid-column:1;grid-row:2 / span 6;width:230px;height:230px;margin:0}
+html.land #lbed>div:nth-child(n+3):nth-child(-n+5){grid-column:2}
+html.land #lbed>.rc{grid-column:3;grid-row:1 / span 3;align-self:start}
+html.land #lbed input{padding:10px 12px}
+html.land #lbed .tp .lb{padding:12px 4px}
+html.land #lbed .ac .lb{padding:14px 6px}
 #lib .lk{display:none;flex:0 0 auto;margin-top:10px;padding-top:10px;border-top:1px solid #8d939c}
 #lib.keys .lk{display:block}
 #lib .lkd{font:800 15px/1 var(--mono);letter-spacing:.16em;color:#cb4a36;text-align:center;margin-bottom:9px}
@@ -332,6 +298,7 @@ html.land #land{display:block}html.land #desk{display:none}
 #lbar{position:absolute;left:50%;bottom:max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;padding:11px;border-radius:24px;background:rgba(236,239,243,.64);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 1.5px rgba(255,255,255,.75),0 8px 24px rgba(40,50,70,.25);transform:translate(-50%,26px);opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease}
 #lbar.show{transform:translate(-50%,0);opacity:1;pointer-events:auto}
 #lbar .lr{display:flex;gap:7px;align-items:stretch}
+#lbar .lgl{position:absolute;top:-10px;transform:translateX(-50%);font:600 6.5px/1 var(--mono);letter-spacing:.1em;color:#8b919a;font-style:normal;pointer-events:none;white-space:nowrap}
 #lbar .sep{width:1px;background:rgba(120,126,136,.35);margin:4px 3px}
 .lk{position:relative;height:50px;min-width:64px;padding:0 6px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 var(--mono);letter-spacing:.12em;color:#2b2e33;touch-action:none;cursor:pointer;
   background:linear-gradient(rgba(255,255,255,.8),rgba(222,226,231,.85));box-shadow:0 2px 0 #b7bcc3,0 0 0 3px rgba(200,204,210,.5),inset 0 1px 0 #fff}
@@ -580,7 +547,7 @@ function mkSwitch(x, y, on, onChange) {
 }
 /* ================= state ================= */
 const SK = 'deck.s', CK = 'deck.cues';
-const S = Object.assign({ vol: .7, filt: .5, dsk: 0, crush: .4, fxCrush: 0, fxFilt: 1, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
+const S = Object.assign({ vol: .7, filt: .5, dsk: 0, crush: .4, fxCrush: 0, fxFilt: 1, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1, iris: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
 S.vari = 0; // varispeed always starts at 0
 let saveT = 0;
@@ -616,7 +583,6 @@ const cur = () => Q.list[Q.idx] || null;
 let ctx = null, E = null;
 const audio = new Audio();
 audio.preload = 'auto'; audio.setAttribute('playsinline', ''); audio.crossOrigin = 'anonymous';
-function curve(k) { const n = 2048, c = new Float32Array(n), t = Math.tanh(k); for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(k * x) / t; } return c; }
 function initAudio() {
   if (E) return E;
   {
@@ -712,13 +678,26 @@ const SPIN_MS = 520;   // a CD player: the disc spins up first, the sound starts
 if (S.cdspin === undefined) S.cdspin = 1;
 if (S.mix === undefined) S.mix = 0;   // automix: 0 off, else crossfade seconds
 const stayBuf = () => BUFENG && !!SCR.buf && (!S.lock || wsolaOK());
-function engState(p) { if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
+let kaAu = null;
+function keepAlive(p) {   // a silent looping <audio> keeps the page a "media page" on iOS, so the buffer engine goes on with the screen locked
+  try {
+    if (!kaAu) { const n = 8000, b = new Uint8Array(44 + n), dv = new DataView(b.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
+      w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); w(36, 'data'); dv.setUint32(40, n, true); b.fill(128, 44);
+      let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+      kaAu = new Audio('data:audio/wav;base64,' + btoa(s)); kaAu.loop = true; kaAu.setAttribute('playsinline', ''); }
+    if (p) { if (kaAu.paused) kaAu.play().catch(() => { /* ignore */ }); } else if (!kaAu.paused) kaAu.pause();
+  } catch (e) { /* ignore */ }
+}
+function engState(p) { keepAlive(p && SCR.active); if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
 const scrOK = () => S.scr && cur() && cur().buf;
 const isPlaying = () => (SCR.active ? SCR.wasPlaying : !audio.paused);
 function rawPlay() { applyRate(true); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
+const LONGSEC = 600;   // a disc longer than this is never decoded: its buffer would not be kept (and would cost hundreds of MB), so it plays straight from <audio>
+const needDecode = t => !!t && BUFENG && S.scr && !t.buf && !t.nopk && !t.nobuf && !!t.file && t.file.size <= 110e6 && !(t.dur > LONGSEC);
 function doPlay() {
   initAudio(); if (ctx.state !== 'running') ctx.resume();
   if (!cur()) { ui.openPicker(); return; }
+  if (needDecode(cur()) && !SCR.active) { const t = cur(); t.wantPlay = true; ui.msg('DECODING', 30000); if (!t.peaksBusy) computePeaks(t); return; }
   if (scrOK()) {
     if (!SCR.active && audio.paused) { scrBegin(true, 0); engState(true); }
     if (SCR.active) { if (!SCR.wasPlaying && !jog.on && S.cdspin) { SCR.rate = 0; SCR.spinUntil = performance.now() + SPIN_MS; SCR.cd = true; } SCR.wasPlaying = true; if (!jog.on) { SCR.motor = baseRate(); SCR.coast = true; } engState(true); return; }
@@ -726,6 +705,7 @@ function doPlay() {
   rawPlay();
 }
 function doPause() {
+  if (cur()) cur().wantPlay = false;
   if (MIX) mixInterrupt();
   if (SCR.active) { SCR.wasPlaying = false; SCR.spinUntil = 0; if (!jog.on) { SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } } engState(false); return; }
   if (scrOK() && !audio.paused) { scrBegin(true, audio.playbackRate); SCR.wasPlaying = false; SCR.motor = 0; if (S.cdspin) { SCR.rate = 0; SCR.cd = true; } return; }
@@ -1075,7 +1055,7 @@ function loadTrack(i, play, keep) {
   if (i < 0 || i >= Q.list.length) return;
   if (MIX && !keep) mixAbort();
   if (!S.sync && cur() && effBpm(cur())) MASTER = effBpm(cur()) * baseRate();
-  Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) x.buf = null; });
+  Q.idx = i; const t = Q.list[i]; Q.list.forEach(x => { if (x !== t) { x.buf = null; x.wantPlay = false; } });
   if (SCR.active && !keep) { scrStop(); SCR.hand = null; SCR.active = false; SCR.search = false; SCR.wasPlaying = false; if (SCR.ng) SCR.ng.gain.setTargetAtTime(0, ctx.currentTime, .02); if (E && E.elg) { const n = ctx.currentTime; E.elg.gain.cancelScheduledValues(n); E.elg.gain.setValueAtTime(1, n); } }
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   const url = URL.createObjectURL(t.file); audio.dataset.url = url; audio.src = url; ppCur = null; audio.load();
@@ -1083,9 +1063,72 @@ function loadTrack(i, play, keep) {
   applyRate(); setCover(t, !!keep); if (!keep) resumePos(t); if (S.sync && t.bpm && (!keep || keep.sync)) syncApply(true);
   if (!keep) { setTimeout(discSnd, 200); ui.msg('LOAD', 600); }
   ui.trackChanged(); ui.cuesChanged(); ui.loopChanged();
-  if (!t.peaks && !t.nopk) setTimeout(() => { if (cur() === t) computePeaks(t); }, 400);   // skipping through discs must not decode every one of them
+  const defer = !!play && !keep && needDecode(t);   // like a tape deck: decode first, then play from the buffer - no hand-over between two engines while the sound runs
+  if (defer) { t.wantPlay = true; ui.msg('DECODING', 30000); }
+  setTimeout(() => { if (cur() === t) loadArt(t); }, 250);
+  if (needDecode(t) || !t.peaks) setTimeout(() => { if (cur() === t) computePeaks(t); }, defer ? 0 : 400);   // skipping through discs must not decode every one of them
   if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: 'IRIDESCENT' }); } catch (e) { /* ignore */ } }
-  if (play) doPlay();
+  if (play && !defer) doPlay();
+}
+
+/* ================= embedded cover art (ID3 APIC, FLAC picture, MP4 covr): lock screen artwork + the optional ART disc label ================= */
+async function artBytes(f) {
+  const rd = async (a, b) => new Uint8Array(await f.slice(a, Math.min(b, f.size)).arrayBuffer());
+  const h = await rd(0, 16), u32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0, str = (b, o, n) => String.fromCharCode.apply(null, b.subarray(o, o + n));
+  const ss = (b, o) => ((b[o] & 127) << 21) | ((b[o + 1] & 127) << 14) | ((b[o + 2] & 127) << 7) | (b[o + 3] & 127);
+  if (str(h, 0, 3) === 'ID3') {
+    const ver = h[3], total = Math.min(ss(h, 6) + 10, 14e6), b = await rd(0, total); let o = 10;
+    if (h[5] & 64) o += ver === 4 ? ss(b, 10) : u32(b, 10) + 4;   // extended header
+    const hl = ver === 2 ? 6 : 10;
+    while (o + hl < b.length) {
+      const id = str(b, o, ver === 2 ? 3 : 4); if (!/^[A-Z0-9]+$/.test(id)) break;
+      const sz = ver === 2 ? (b[o + 3] << 16) | (b[o + 4] << 8) | b[o + 5] : ver === 4 ? ss(b, o + 4) : u32(b, o + 4);
+      if (id === 'APIC' || id === 'PIC') {
+        let p = o + hl; const enc = b[p++]; if (ver === 2) p += 3; else { while (b[p] && p < o + hl + sz) p++; p++; }
+        p++; if (enc === 1 || enc === 2) { while (p < o + hl + sz - 1 && (b[p] || b[p + 1])) p += 2; p += 2; } else { while (b[p] && p < o + hl + sz) p++; p++; }
+        return b.subarray(p, o + hl + sz);
+      }
+      if (sz <= 0) break; o += hl + sz;
+    }
+    return null;
+  }
+  if (str(h, 0, 4) === 'fLaC') {
+    const b = await rd(0, 8e6); let o = 4;
+    while (o + 4 < b.length) {
+      const last = b[o] & 128, ty = b[o] & 127, ln = (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]; o += 4;
+      if (ty === 6) { let p = o + 4; const ml = u32(b, p); p += 4 + ml; const dl = u32(b, p); p += 4 + dl + 16; const n = u32(b, p); p += 4; return b.subarray(p, p + n); }
+      if (last) break; o += ln;
+    }
+    return null;
+  }
+  if (str(h, 4, 4) === 'ftyp') {
+    let pos = 0;
+    for (let k = 0; k < 24 && pos < f.size; k++) {
+      const hd = await rd(pos, pos + 16); let sz = u32(hd, 0); const ty = str(hd, 4, 4); if (sz === 1) sz = u32(hd, 8) * 4294967296 + u32(hd, 12); if (sz < 8) break;
+      if (ty === 'moov') {
+        const m = await rd(pos, pos + Math.min(sz, 14e6));
+        const find = (b, from, to, path) => {   // walk the atoms down to moov/udta/meta/ilst/covr/data
+          let o = from;
+          while (o + 8 <= to) { const z = u32(b, o), t = str(b, o + 4, 4); if (z < 8) break; if (t === path[0]) { if (path.length === 1) return b.subarray(o + 16, Math.min(o + z, to)); return find(b, o + 8 + (t === 'meta' ? 4 : 0), Math.min(o + z, to), path.slice(1)); } o += z; }
+          return null;
+        };
+        return find(m, 8, m.length, ['udta', 'meta', 'ilst', 'covr', 'data']);
+      }
+      pos += sz;
+    }
+  }
+  return null;
+}
+async function loadArt(t) {
+  if (!t || t.art !== undefined || t.artBusy) return; t.artBusy = true;
+  try {
+    const raw = await artBytes(t.file); if (!raw || raw.length < 200) { t.art = ''; return; }
+    const sig = raw[0] === 0x89 ? 'image/png' : 'image/jpeg', bm = await createImageBitmap(new Blob([raw], { type: sig })), n = 480, c = document.createElement('canvas'); c.width = c.height = n;
+    const sc = Math.max(n / bm.width, n / bm.height), w = bm.width * sc, h = bm.height * sc; c.getContext('2d').drawImage(bm, (n - w) / 2, (n - h) / 2, w, h);
+    t.art = c.toDataURL('image/jpeg', .82);
+    if (cur() === t) { drawLabel(t); if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: t.name, artist: 'IRIDESCENT', artwork: [{ src: t.art, sizes: n + 'x' + n, type: 'image/jpeg' }] }); } catch (e) { /* ignore */ } } }
+  } catch (e) { t.art = ''; }
+  t.artBusy = false;
 }
 
 /* ================= resume + disc cover ================= */
@@ -1118,14 +1161,15 @@ function lbBase(t) {
 }
 function lbData(t) {
   const base = lbBase(t), o = lbAll()[t.key] || {}, ext = ((t.file && t.file.name || '').match(/\.([a-z0-9]{2,4})$/i) || [, ''])[1].toUpperCase();
-  return { a: o.a != null ? o.a : base.a, b: o.b != null ? o.b : base.b, n: o.n || '', tpl: o.t != null ? o.t : hueOf(t.key) % 8, auto: o.t == null, ext: ext || 'AUDIO', mb: t.file && t.file.size ? Math.max(1, Math.round(t.file.size / 1048576)) + ' MB' : '', dur: t.dur || 0, hue: hueOf(t.key) };
+  return { a: o.a != null ? o.a : base.a, b: o.b != null ? o.b : base.b, n: o.n || '', tpl: o.t === 9 ? (t.art ? 9 : 0) : o.t != null ? o.t : hueOf(t.key) % 8, auto: o.t == null, ext: ext || 'AUDIO', mb: t.file && t.file.size ? Math.max(1, Math.round(t.file.size / 1048576)) + ' MB' : '', dur: t.dur || 0, hue: hueOf(t.key), pk: t.peaks || null, art: t.art || '' };
 }
 function lbWrap(s, max, lines) {
   const w = s.split(/\s+/).filter(Boolean), out = []; let c = '';
   for (const x of w) { if (!c || (c + ' ' + x).length <= max) c = (c + ' ' + x).trim(); else { out.push(c); c = x; } }
   if (c) out.push(c);
-  if (out.length > lines) { out.length = lines; out[lines - 1] = out[lines - 1].slice(0, max - 1) + '…'; }
-  return out.map(l => l.length > max ? l.slice(0, max - 1) + '…' : l);
+  const cap = Math.round(max * 1.4);   // an over-long last line is squeezed by the text run instead of being cut; only a really long one gets an ellipsis
+  if (out.length > lines) { const rest = out.slice(lines - 1).join(' '); out.length = lines; out[lines - 1] = rest.length > cap ? rest.slice(0, cap - 1) + '…' : rest; }
+  return out.map(l => l.length > cap ? l.slice(0, cap - 1) + '…' : l);
 }
 function labelInner(d) {
   const INK = '#3e4753', INK2 = '#6a7482', PEN = '#2c3f6e', ac = 'hsl(' + d.hue + ',38%,40%)';
@@ -1135,6 +1179,12 @@ function labelInner(d) {
   const tx = (x, y, txt, sz, f, w, fill, anc, maxW, ls, extra) => {
     if (!txt) return ''; const cw = f === MONO ? .62 : f === SERIF ? .64 : .6, est = txt.length * (sz * cw + (ls || 0));
     return '<text x="' + x + '" y="' + y + '" font-family="' + f + '" font-size="' + sz + '" font-weight="' + w + '" fill="' + fill + '" text-anchor="' + (anc || 'start') + '"' + (ls ? ' letter-spacing="' + ls + '"' : '') + (maxW && est > maxW ? ' textLength="' + maxW + '" lengthAdjust="spacingAndGlyphs"' : '') + (extra || '') + '>' + xesc(txt) + '</text>';
+  };
+  // the artist line wraps onto a second line instead of being cut (the second line is dropped only past two lines)
+  let taN = 1;
+  const ta = (x, y, str, n, sz, f, w, fill, anc, maxW, ls, ln) => {
+    const L = lbWrap(String(str || '').toUpperCase(), n, ln || 2); taN = L.length;
+    return L.map((l, i) => tx(x, y + i * sz * 1.5, l, sz, f, w, fill, anc, maxW, ls)).join('');
   };
   const mins = Math.max(1, Math.ceil(d.dur / 60)), tm = d.dur ? Math.floor(d.dur / 60) + ':' + String(Math.floor(d.dur % 60)).padStart(2, '0') : '--:--';
   const R = 134, chord = dy => Math.sqrt(Math.max(0, R * R - dy * dy));
@@ -1150,14 +1200,14 @@ function labelInner(d) {
   if (d.tpl === 0) {            // classic: title on the left, spec on the right
     const L = lbWrap(d.a.toUpperCase(), 9, 3), sz = L.length > 2 ? 11 : L.length > 1 ? 13.5 : 16, y0 = 150 - (L.length - 1) * sz * .55;
     L.forEach((l, i) => { o += tx(22, y0 + i * sz * 1.12, l, sz, SERIF, 700, INK, 'start', 70); });
-    if (d.b) o += tx(22, y0 + L.length * sz * 1.12 + 5, d.b.toUpperCase().slice(0, 20), 6.2, MONO, 600, INK2, 'start', 70, .8);
+    if (d.b) o += ta(22, y0 + L.length * sz * 1.12 + 5, d.b, 20, 6.2, MONO, 600, INK2, 'start', 70, .8);
     o += tx(196, 132, 'AUDIO', 13, SERIF, 700, INK, 'start', 66, .8) + tx(196, 166, String(mins), 30, SANS, 700, INK, 'start', 62) + tx(196, 177, 'min', 9, SANS, 600, INK2, 'start');
     o += tx(196, 190, (d.ext + (d.mb ? ' · ' + d.mb : '')).slice(0, 14), 6.4, MONO, 600, INK2, 'start', 70, .6) + badge(222, 112, ac);
     o += arc('IRIDESCENT · DIGITAL AUDIO · RECORDABLE · IRIDESCENT · DIGITAL AUDIO · RECORDABLE ·') + lines(3, 214, 15, true);
   } else if (d.tpl === 1) {     // banner: big title on top, boxes on the right
     const L = lbWrap(d.a, 17, 2), sz = L.length > 1 ? 15 : 22;
     L.forEach((l, i) => { o += tx(144, 58 + i * sz * 1.05, l, sz, SANS, 800, INK, 'middle', 188); });
-    if (d.b) o += tx(144, 58 + L.length * sz * 1.05 + 2, d.b.toUpperCase().slice(0, 28), 7, MONO, 600, INK2, 'middle', 150, 1.4);
+    if (d.b) o += ta(144, 58 + L.length * sz * 1.05 + 2, d.b, 28, 7, MONO, 600, INK2, 'middle', 150, 1.4);
     o += tx(22, 150, 'AUDIO', 17, SANS, 800, INK2, 'start', 62, 1) + badge(36, 168, INK2);
     [[tm + ' min'], [d.ext], [d.mb || 'DIGITAL']].forEach((b, i) => { const y = 118 + i * 24; o += '<rect x="196" y="' + y + '" width="70" height="19" rx="4" fill="none" stroke="' + ac + '" stroke-width="1" opacity=".8"/>' + tx(231, y + 13, b[0], 9.5, SANS, 700, ac, 'middle', 60); });
     o += lines(4, 203, 14, true);
@@ -1165,9 +1215,10 @@ function labelInner(d) {
     for (let i = 0; i < 60; i++) { const a = i * 6 * Math.PI / 180, r1 = i % 5 ? 126 : 122, r2 = 130; o += '<line x1="' + (144 + Math.sin(a) * r1) + '" y1="' + (144 - Math.cos(a) * r1) + '" x2="' + (144 + Math.sin(a) * r2) + '" y2="' + (144 - Math.cos(a) * r2) + '" stroke="' + INK2 + '" stroke-width=".6" opacity=".5"/>'; }
     const L = lbWrap(d.a.toUpperCase(), 11, 3), sz = L.length > 2 ? 9 : 11;
     L.forEach((l, i) => { o += tx(20, 118 + i * sz * 1.35, l, sz, MONO, 700, INK, 'start', 74); });
-    if (d.b) o += tx(20, 118 + L.length * sz * 1.35 + 4, d.b.toUpperCase().slice(0, 14), 6.4, MONO, 500, INK2, 'start', 74, .6);
+    let barY = 118 + L.length * sz * 1.35 - 6;
+    if (d.b) { const ay = 118 + L.length * sz * 1.35 + 4; o += ta(20, ay, d.b, 15, 6.4, MONO, 500, INK2, 'start', 74, .6, 3); barY = ay + (taN - 1) * 9.6 + 5; }
     o += tx(268, 150, tm, 25, MONO, 700, INK, 'end', 76) + tx(268, 163, 'MIN:SEC', 6.4, MONO, 600, ac, 'end', 60, 1.2) + tx(268, 176, (d.ext + (d.mb ? ' ' + d.mb : '')).slice(0, 14), 6.4, MONO, 500, INK2, 'end', 76, .6);
-    o += '<rect x="20" y="168" width="22" height="5" fill="' + ac + '" opacity=".75"/>' + lines(2, 222, 17, true);
+    o += '<rect x="20" y="' + barY.toFixed(1) + '" width="22" height="5" fill="' + ac + '" opacity=".75"/>' + lines(2, 222, 17, true);
   } else {
     const cl = x => '<defs><clipPath id="c' + aid + '"><circle cx="144" cy="144" r="133"/></clipPath></defs><g clip-path="url(#c' + aid + ')">' + x + '</g>';
     const note = (y, x1, x2) => d.n ? tx((x1 + x2) / 2, y - 3, d.n, 11.5, HAND, 400, PEN, 'middle', x2 - x1 - 10, 0, ' transform="rotate(-2 144 ' + y + ')"') : '';
@@ -1178,7 +1229,7 @@ function labelInner(d) {
       g += '<path d="M30,116 C52,98 74,106 98,96 L190,96 C214,106 236,98 258,116" fill="none" stroke="' + ac + '" stroke-width="1" opacity=".8"/>';
       o += cl(g) + arc('RECORDABLE · ' + d.ext + ' · ' + (d.mb || 'DIGITAL') + ' · ' + mins + ' MIN', 36);
       o += tx(268, 152, d.ext, 17, SANS, 800, INK, 'end', 70) + tx(268, 164, 'DIGITAL AUDIO', 5.6, MONO, 600, INK2, 'end', 70, .8);
-      o += tx(22, 146, d.b ? d.b.toUpperCase().slice(0, 12) : 'AUDIO', 8, MONO, 700, INK, 'start', 60, 1) + tx(22, 158, tm, 8, MONO, 500, INK2, 'start', 60, .6);
+      o += ta(22, 146, d.b || 'AUDIO', 15, 8, MONO, 700, INK, 'start', 60, 1) + tx(22, 146 + (taN > 1 ? 23 : 12), tm, 8, MONO, 500, INK2, 'start', 60, .6);
       const tl = lbWrap(d.a, 26, 1)[0] || '';
       o += '<path id="' + aid + 'b" d="M30,144 A114,114 0 0 0 258,144" fill="none"/><text font-family="' + SANS + '" font-size="13" font-weight="700" fill="' + INK + '"><textPath href="#' + aid + 'b" startOffset="50%" text-anchor="middle"' + (tl.length > 22 ? ' textLength="200" lengthAdjust="spacingAndGlyphs"' : '') + '>' + xesc(tl) + '</textPath></text>';
       o += d.n ? tx(144, 218, d.n, 11, HAND, 400, PEN, 'middle', 120, 0, ' transform="rotate(-2 144 218)"') : '';
@@ -1190,32 +1241,46 @@ function labelInner(d) {
       rows.forEach((r, i) => { const y = 198 + i * 15; o += rule(y, 62, 226, .6) + tx(64, y - 3, r[0], 5.6, MONO, 700, ac, 'start', 0, 1) + (r[1] ? tx(98, y - 3, r[1], 10.5, HAND, 400, PEN, 'start', 124, 0) : ''); });
       [243, 258].forEach(y => { const h = chord(y - 144) - 34; o += rule(y, 144 - h, 144 + h, .45); });
       o += '<path d="M40,110 H98 M190,110 H248" stroke="' + INK2 + '" stroke-width=".6" opacity=".5"/>';
-      const t1 = lbWrap(d.a, 20, 1)[0]; o += tx(144, 76, t1 || '', 14, SANS, 800, INK, 'middle', 170) + tx(144, 90, (d.b || '').toUpperCase().slice(0, 28), 6.6, MONO, 600, INK2, 'middle', 140, 1.2);
-    } else if (d.tpl === 5) {   // corner: a diagonal colour block with the numbers
-      let g = '<path d="M40,250 L288,120 L288,288 L40,288 Z" fill="' + ac + '" opacity=".26"/><path d="M40,250 L288,120" stroke="' + ac + '" stroke-width="1.2" opacity=".9"/>';
-      o += cl(g);
-      const L = lbWrap(d.a, 14, 2), sz = L.length > 1 ? 14 : 19;
-      L.forEach((l, i) => { o += tx(38, 66 + i * sz * 1.1, l, sz, SANS, 800, INK, 'start', 190); });
-      if (d.b) o += tx(38, 66 + L.length * sz * 1.1 + 2, d.b.toUpperCase().slice(0, 28), 6.8, MONO, 600, INK2, 'start', 150, 1.2);
-      o += tx(212, 236, String(mins), 30, SANS, 800, INK, 'middle', 56) + tx(212, 248, 'MIN', 8, SANS, 700, INK2, 'middle', 40, 1.5) + tx(212, 259, d.ext, 6.4, MONO, 600, INK2, 'middle', 56, .6);
-      o += '<text transform="translate(222 160) rotate(-27.7)" font-family="' + MONO + '" font-size="5.6" letter-spacing="1" fill="' + INK2 + '" text-anchor="middle">' + xesc('AUDIO · ' + d.ext + ' · ' + tm) + '</text>';
-      o += d.n ? tx(86, 224, d.n, 11, HAND, 400, PEN, 'middle', 90, 0, ' transform="rotate(-3 86 224)"') + rule(227, 40, 132, .5) : '';
+      const t1 = lbWrap(d.a, 20, 1)[0]; o += tx(144, 76, t1 || '', 14, SANS, 800, INK, 'middle', 170) + ta(144, 90, d.b || '', 28, 6.6, MONO, 600, INK2, 'middle', 140, 1.2);
+    } else if (d.tpl === 5) {   // rings: concentric side arcs whose weight follows the loudness of the track, title above, time below
+      const N = 22, pk = d.pk && d.pk.length ? d.pk : null;
+      const amp = (i, side) => {
+        if (pk) { const f = (i + .5) / N, k = Math.min(pk.length - 1, Math.floor((side ? 1 - f : f) * pk.length)); return Math.max(.08, Math.min(1, pk[k])); }
+        return .5 + .5 * Math.sin(i * .83 + d.hue * .05 + (side ? 2.1 : 0)) * Math.cos(i * .37 + d.hue * .02);
+      };
+      const arcP = (r, a1, a2) => { const p = a => (144 + r * Math.sin(a * Math.PI / 180)).toFixed(1) + ',' + (144 - r * Math.cos(a * Math.PI / 180)).toFixed(1); return 'M' + p(a1) + ' A' + r + ' ' + r + ' 0 0 1 ' + p(a2); };
+      for (let i = 0; i < N; i++) {
+        const r = 62 + i * 3;
+        [[50, 130, 0], [230, 310, 1]].forEach(g => { const v = amp(i, g[2]); o += '<path d="' + arcP(r, g[0], g[1]) + '" fill="none" stroke="' + ac + '" stroke-width="' + (.4 + v * 1.05).toFixed(2) + '" opacity="' + (.18 + v * .5).toFixed(2) + '" stroke-linecap="round"/>'; });
+      }
+      const L = lbWrap(d.a, 16, 2), sz = L.length > 1 ? 11.5 : 14;
+      L.forEach((l, i) => { o += tx(144, 50 + i * sz * 1.1, l, sz, SANS, 800, INK, 'middle', 112); });
+      if (d.b) o += ta(144, 50 + L.length * sz * 1.1 + 2, d.b, 24, 6.2, MONO, 600, INK2, 'middle', 110, 1.2);
+      o += tx(144, 214, tm, 15, MONO, 700, INK, 'middle', 90) + tx(144, 225, (d.ext + (d.mb ? ' · ' + d.mb : '')).slice(0, 16), 6, MONO, 600, INK2, 'middle', 90, .8);
+      o += d.n ? tx(144, 245, d.n, 11, HAND, 400, PEN, 'middle', 110, 0, ' transform="rotate(-2 144 245)"') + rule(248, 98, 190, .45) : '';
     } else if (d.tpl === 6) {   // band: a colour stripe, halftone corner
       let g = '<rect x="0" y="150" width="288" height="26" fill="' + ac + '" opacity=".28"/>';
       for (let y = 190; y < 270; y += 9) for (let x = 14 + ((y / 9 | 0) % 2) * 4.5; x < 130; x += 9) { const k = Math.max(0, 1 - Math.hypot(x - 14, y - 280) / 120) * 3.1; if (k > .4 && Math.hypot(x - 144, y - 144) < 130 && Math.hypot(x - 144, y - 144) > 60) g += '<circle cx="' + x + '" cy="' + y + '" r="' + k.toFixed(2) + '" fill="' + ac + '" opacity=".6"/>'; }
       o += cl(g);
       const L = lbWrap(d.a, 18, 2), sz = L.length > 1 ? 14 : 19;
       L.forEach((l, i) => { o += tx(144, 62 + i * sz * 1.1, l, sz, SANS, 800, INK, 'middle', 190); });
-      if (d.b) o += tx(144, 62 + L.length * sz * 1.1 + 1, d.b.toUpperCase().slice(0, 28), 6.8, MONO, 600, INK2, 'middle', 150, 1.4);
+      if (d.b) o += ta(144, 62 + L.length * sz * 1.1 + 1, d.b, 28, 6.8, MONO, 600, INK2, 'middle', 150, 1.4);
       o += tx(22, 168, 'AUDIO', 13, SANS, 800, INK, 'start', 62, .8) + tx(268, 163, mins + ' min', 8.5, SANS, 700, INK, 'end', 60) + tx(268, 172, (d.mb || d.ext), 6.6, SANS, 600, INK2, 'end', 60) + '<line x1="190" y1="154" x2="190" y2="172" stroke="' + INK2 + '" stroke-width=".7" opacity=".6"/>';
       o += d.n ? tx(188, 228, d.n, 11, HAND, 400, PEN, 'middle', 120, 0, ' transform="rotate(-2 188 228)"') : ''; o += rule(231, 130, 250, .55) + rule(247, 150, 240, .45);
+    } else if (d.tpl === 9) {   // art: the cover of the file fills the disc under a thin veil, no print
+      o += '<defs><clipPath id="ca' + aid + '"><circle cx="144" cy="144" r="133"/></clipPath><radialGradient id="va' + aid + '"><stop offset=".25" stop-color="#fff" stop-opacity=".0"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></radialGradient></defs>'
+        + '<image href="' + d.art + '" x="11" y="11" width="266" height="266" preserveAspectRatio="xMidYMid slice" clip-path="url(#ca' + aid + ')"/><circle cx="144" cy="144" r="133" fill="url(#va' + aid + ')"/><circle cx="144" cy="144" r="126" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".6"/>';
     } else if (d.tpl === 8) {   // blank: no print, only a fine rim line and a stacking ring
       o += '<circle cx="144" cy="144" r="126" fill="none" stroke="' + INK2 + '" stroke-width=".7" opacity=".45"/><circle cx="144" cy="144" r="60" fill="none" stroke="' + INK2 + '" stroke-width=".6" opacity=".35"/><path d="M144,12 v9" stroke="' + INK2 + '" stroke-width=".8" opacity=".6"/>';
     } else {                    // mixtape: written by hand, almost nothing printed
-      const L = lbWrap(d.a, 13, 2), sz = L.length > 1 ? 21 : 27;
-      L.forEach((l, i) => { o += tx(40, 100 + i * sz * 1.05, l, sz, HAND, 400, PEN, 'start', 200, 0, ' transform="rotate(-4 40 100)"'); });
-      const uy = 104 + L.length * sz * 1.05; o += '<path d="M40,' + uy + ' q24,-4 50,-1 t24,-1" fill="none" stroke="' + PEN + '" stroke-width="1" opacity=".7" stroke-linecap="round"/>';
-      if (d.b) o += tx(44, uy + 18, d.b, 12, HAND, 400, PEN, 'start', 160, 0, ' transform="rotate(-3 44 ' + uy + ')"');
+      const L = lbWrap(d.a, 13, 2), sz = L.length > 1 ? 19 : 27, y0 = L.length > 1 ? 52 : 68;   // the block sits above the hub, never over it
+      const lim = (y, h) => chord(y - h * .8 - 2 - 144) - 10;   // half width of the disc at the top of a handwritten line: the text must stay inside it
+      const rim = (y, h) => Math.sqrt(Math.max(0, 118 * 118 - Math.pow(y - h * .8 - 10 - 144, 2))) - 4;   // the printed rim text sits on the upper right: stay inside it
+      const wd = (y, h, x) => Math.max(44, Math.min(200, 144 + Math.min(lim(y, h), rim(y, h)) - x));
+      let x0 = 40; L.forEach((l, i) => { x0 = Math.max(x0, 144 - lim(y0 + i * sz * 1.05, sz)); });
+      L.forEach((l, i) => { const y = y0 + i * sz * 1.05; o += tx(x0, y, l, sz, HAND, 400, PEN, 'start', wd(y, sz, x0), 0, ' transform="rotate(-4 ' + x0 + ' ' + y + ')"'); });
+      const uy = y0 + 4 + (L.length - 1) * sz * 1.05; o += '<path d="M' + x0 + ',' + uy + ' q24,-4 50,-1 t24,-1" fill="none" stroke="' + PEN + '" stroke-width="1" opacity=".7" stroke-linecap="round"/>';
+      if (d.b) o += tx(x0 + 4, uy + 15, d.b, 12, HAND, 400, PEN, 'start', Math.min(150, wd(uy + 15, 12, x0 + 4)), 0, ' transform="rotate(-3 ' + (x0 + 4) + ' ' + uy + ')"');
       o += d.n ? tx(144, 216, d.n, 11, HAND, 400, PEN, 'middle', 130, 0, ' transform="rotate(-2 144 216)"') : '';
       [208, 224, 240].forEach(y => { const h = chord(y - 144) - 22; o += rule(y, 144 - h, 144 + h, .45); });
       o += arc('AUDIO · ' + mins + ' MIN · ' + d.ext, 36) + '<circle cx="232" cy="108" r="9" fill="none" stroke="' + ac + '" stroke-width="1" opacity=".8"/><circle cx="232" cy="108" r="3" fill="' + ac + '" opacity=".6"/>';
@@ -1338,8 +1403,8 @@ async function analyzeBpmA(buf) {
   return { bpm: Math.round(fb * 10) / 10, off: fphi / fps, conf: fs / (mean * 2 + 1e-9) };
 }
 let MASTER = 0;
-function qSnap(x) {
-  const t = cur(); if (!S.q || !t || !effBpm(t)) return x;
+function qSnap(x, force) {   // cues follow QUANTIZE; loop points always snap to the beat grid when the tempo is known
+  const t = cur(); if ((!S.q && !force) || !t || !effBpm(t)) return x;
   const p = beatLen(t); return Math.max(0, Math.round((x - t.off) / p) * p + t.off);
 }
 function syncApply(quiet) {
@@ -1356,8 +1421,8 @@ function syncApply(quiet) {
 async function computePeaks(t) {
   if (t.peaksBusy) return; t.peaksBusy = true;
   try {
-    if (t.file.size > 110e6) throw new Error('big');
-    initAudio();
+    if (t.file.size > 110e6 || t.dur > LONGSEC) throw new Error('big');
+    initAudio(); if (!t.buf && cur() === t) ui.msg('DECODING', 30000);   // the pitch / scratch engine is ready when this changes to READY
     const buf = t.buf || await new Promise(async (res, rej) => { try { const ab = await t.file.arrayBuffer(); if (cur() !== t) { rej(new Error('stale')); return; } const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); } catch (e) { rej(e); } });
     const n = 140, pk = new Float32Array(n), len = buf.length, step = len / n;
     for (let c = 0; c < Math.min(2, buf.numberOfChannels); c++) {
@@ -1367,13 +1432,15 @@ async function computePeaks(t) {
     let mx = 0; for (let b = 0; b < n; b++) if (pk[b] > mx) mx = pk[b];
     for (let b = 0; b < n; b++) pk[b] = Math.pow(pk[b] / (mx || 1), .7);
     t.peaks = pk; if (!t.dur) t.dur = buf.duration;
-    if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
+    await new Promise(r => setTimeout(r, 0)); if (cur() !== t) throw new Error('stale');   // let the screen breathe between the heavy steps
+    if (cur() === t) { scrKeep(t, buf); if (!t.buf) t.nobuf = true; if (t.wantPlay) { t.wantPlay = false; ui.msg('READY', 900); doPlay(); } else if (t.buf && BUFENG && S.scr && !S.lock && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
     const cached = bpmStore()[t.key];
     if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; t.conf = cached[3]; }
     else { await new Promise(r => setTimeout(r, 60)); if (cur() === t) { const an = await analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } } }
     if (t.bpm && S.sync && cur() === t) syncApply(true);
-  } catch (e) { if (!(e && e.message === 'stale')) t.nopk = true; }
-  t.peaksBusy = false; ui.trackChanged(true);
+    if (cur() === t) ui.msg('READY', 900);
+  } catch (e) { if (!(e && e.message === 'stale')) t.nopk = true; else if (msgText === 'DECODING') msgUntil = 0; if (t.wantPlay && cur() === t) { t.wantPlay = false; if (msgText === 'DECODING') msgUntil = 0; doPlay(); } }
+  t.peaksBusy = false; ui.trackChanged(true); if (t === cur()) drawLabel(t);
 }
 
 /* ================= cue / loop logic ================= */
@@ -1412,12 +1479,13 @@ function loopRollEnd() {
   if (!slip) return; const s = slip; slip = null; loop.on = false; loop.auto = false; loop.a = loop.b = null;
   seek(s.pos + (performance.now() - s.t0) / 1000 * s.r); ui.msg('SLIP'); ui.loopChanged();
 }
-function loopA() { if (!cur()) return; if (loop.on && loop.auto) { loopSize(-1); return; } loop.auto = false; loop.a = qSnap(curPos()); if (loop.b != null && loop.b <= loop.a) { loop.b = null; loop.on = false; } ui.msg('LOOP IN ' + fmt(loop.a)); ui.loopChanged(); }
+function loopA() { if (!cur()) return; if (loop.on && loop.auto) { loopSize(-1); return; } loop.auto = false; loop.a = qSnap(curPos(), true); if (loop.b != null && loop.b <= loop.a) { loop.b = null; loop.on = false; } ui.msg('LOOP IN ' + fmt(loop.a)); ui.loopChanged(); }
 function loopB() {
-  if (!cur()) return; if (loop.on && loop.auto) { loopSize(1); return; } const t = qSnap(curPos());
+  if (!cur()) return; if (loop.on && loop.auto) { loopSize(1); return; } const t = qSnap(curPos(), true);
   if (loop.a == null) { ui.msg('SET IN FIRST'); return; }
-  if (t <= loop.a + .15) { ui.msg('OUT AFTER IN'); return; }
-  loop.b = t; loop.on = true; loop.auto = false; ui.msg('LOOP ' + fmt(loop.a) + '-' + fmt(loop.b)); ui.loopChanged();
+  let tb = t; if (tb <= loop.a + .15 && effBpm(cur())) tb = loop.a + beatLen(cur());   // same beat: the shortest loop is one beat
+  if (tb <= loop.a + .15) { ui.msg('OUT AFTER IN'); return; }
+  loop.b = tb; loop.on = true; loop.auto = false; ui.msg('LOOP ' + fmt(loop.a) + '-' + fmt(loop.b)); ui.loopChanged();
 }
 function loopToggle() {
   if (!cur()) return;
@@ -1616,15 +1684,22 @@ const vFader = mkFader({ x: 462, y: 292, len: 290, value: .5, def: .5, detent: .
 /* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
 const hub = el('hubbtn', chassis, 'left:' + (JX - 48) + 'px;top:' + (JY - 48) + 'px;width:96px;height:96px');
 const spn = document.createElement('div'); spn.className = 'spn';
-{ let c = ''; for (let k = 0; k < 3; k++) c += '<g transform="rotate(' + k * 120 + ' 48 48)"><path d="M41 31 L41 15 Q48 8 55 15 L55 31 Z" fill="url(#clw)" stroke="#05060a" stroke-width="1"/><path d="M44 14 Q48 11 52 14" stroke="rgba(255,255,255,.35)" stroke-width="1.4"/></g>';
-  spn.innerHTML = '<svg viewBox="0 0 96 96"><defs><linearGradient id="clw" x1="0" x2="1"><stop offset="0" stop-color="#55595f"/><stop offset=".5" stop-color="#2a2d33"/><stop offset="1" stop-color="#0d0e11"/></linearGradient></defs><circle cx="48" cy="48" r="29" fill="#0b0c0f" stroke="#2c2f35" stroke-width="1.5"/>' + c + '<circle cx="48" cy="48" r="13" fill="#1b1d21" stroke="#4a4e55" stroke-width="1.2"/><circle cx="48" cy="48" r="5" fill="#08090b" stroke="#5a5f67" stroke-width="1"/></svg>'; hub.insertBefore(spn, hub.firstChild); }
+{ let c = ''; for (let k = 0; k < 3; k++) c += '<g transform="rotate(' + k * 120 + ' 48 48)"><rect x="43.5" y="22.5" width="9" height="6.5" rx="2.4" fill="url(#clw)" stroke="#050608" stroke-width=".8"/><rect x="45" y="23.4" width="6" height="1.3" rx=".65" fill="rgba(255,255,255,.3)"/></g>';
+  spn.innerHTML = '<svg viewBox="0 0 96 96"><defs><radialGradient id="hb" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#2c2f35"/><stop offset=".7" stop-color="#15161a"/><stop offset="1" stop-color="#0a0b0d"/></radialGradient><linearGradient id="clw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a5e66"/><stop offset="1" stop-color="#1c1e22"/></linearGradient><linearGradient id="cap" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b4f57"/><stop offset=".55" stop-color="#1d1f23"/><stop offset="1" stop-color="#0c0d0f"/></linearGradient></defs>'
+    + '<circle cx="48" cy="50" r="33" fill="rgba(10,12,16,.3)"/>'
+    + '<circle cx="48" cy="48" r="32" fill="url(#hb)"/><circle cx="48" cy="48" r="31.4" fill="none" stroke="#6b7078" stroke-width=".8"/><circle cx="48" cy="48" r="28.5" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="1"/>'
+    + '<circle cx="48" cy="50" r="23" fill="rgba(0,0,0,.45)"/><circle cx="48" cy="48" r="23" fill="url(#cap)" stroke="#07080a" stroke-width="1"/><circle cx="48" cy="48" r="22" fill="none" stroke="#8a8f98" stroke-opacity=".55" stroke-width=".7"/>'
+    + '<circle cx="48" cy="48" r="17.5" fill="none" stroke="#000" stroke-opacity=".5" stroke-width=".8"/>' + c
+    + '<circle cx="48" cy="48" r="6" fill="#0b0c0e" stroke="#4a4e55" stroke-width=".9"/><circle cx="48" cy="48" r="2.6" fill="#7a7f88"/><circle cx="47.3" cy="47.2" r=".9" fill="#fff" fill-opacity=".7"/></svg>'; hub.insertBefore(spn, hub.firstChild); }
 const lid = el('cdlid', chassis, 'left:' + (JX - 184) + 'px;top:' + (JY - 184) + 'px;width:368px;height:368px');
 const lidp = document.createElement('div'); lidp.className = 'lidp'; lid.appendChild(lidp);
 
+const grp = (t, x0, x1, y) => { const w = t.length * 7 + 18, c = (x0 + x1) / 2; el('', chassis, 'position:absolute;left:' + x0 + 'px;top:' + y + 'px;width:' + (c - w / 2 - x0) + 'px;height:1px;background:var(--line)'); el('', chassis, 'position:absolute;left:' + (c + w / 2) + 'px;top:' + y + 'px;width:' + (x1 - c - w / 2) + 'px;height:1px;background:var(--line)'); lab(t, c, y, { cls: 'sm', c: '#6b7078' }); };   // a group caption: a centred label with a thin rule on both sides
 /* ---- cue point strip: 8 tall hot-cue pads (thumb zone) ---- */
 const cueLed = [], pdn = [], padEls = [];
 {
   const _c = chassis; chassis = pageLayer(0);
+  grp('CUE  PADS', 43, 457, 668);
   for (let i = 0; i < 8; i++) {
     const x = 43 + (i % 4) * 106, y = 700 + (i >> 2) * 84;
     cueLed.push(led(x + 48, y - 10, ''));
@@ -1655,6 +1730,7 @@ function holdKey(dir) {
   };
 }
 const _c0 = chassis; chassis = pageLayer(0);
+grp('TRANSPORT', 43, 457, 868);
 const TY = 898, TH = 84;
 const bPrev = mkBtn({ x: 38, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) prev(); } }); icon(bPrev, IC.prev);
 const hR = holdKey(-1), bRew = mkBtn({ x: 116, y: TY, w: 70, h: TH, text: '', down: hR.down, up: hR.up }); icon(bRew, IC.rew);
@@ -1669,7 +1745,6 @@ chassis = _c0;
 
 /* ---- function row ---- */
 const _c1 = chassis; chassis = pageLayer(1);
-const grp = (t, x0, x1, y) => { const w = t.length * 7 + 18, c = (x0 + x1) / 2; el('', chassis, 'position:absolute;left:' + x0 + 'px;top:' + y + 'px;width:' + (c - w / 2 - x0) + 'px;height:1px;background:var(--line)'); el('', chassis, 'position:absolute;left:' + (c + w / 2) + 'px;top:' + y + 'px;width:' + (x1 - c - w / 2) + 'px;height:1px;background:var(--line)'); lab(t, c, y, { cls: 'sm', c: '#6b7078' }); };
 grp('FX', 43, 457, 698); grp('CUE  /  LOOP', 43, 457, 828); grp('TEMPO  /  MODE', 43, 351, 940);
 const FH = 64, FW = 96, fx = i => 43 + (i % 4) * 106, fy = i => 844 + (i >> 2) * 112, fc = i => fx(i) + FW / 2;
 mkBtn({ x: fx(0), y: fy(0), w: FW, h: FH, text: 'CUE', down: () => cueDown(), up: () => cueUp() });
@@ -1732,6 +1807,8 @@ const JMN = ['SCRATCH', '', 'NO SCRATCH'];
 let jgLong = false, jgTo = 0;
 const bScr = mkBtn({ x: 84, y: 34, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'JOG', id: 'scr', down: () => { jgLong = false; clearTimeout(jgTo); jgTo = setTimeout(() => { jgLong = true; S.dsk = S.dsk ? 0 : 1; save(); const t = cur(); cdrot.style.background = coverBg(t ? t.key : ''); ui.msg('DISC ' + (S.dsk ? 'WHITE' : 'COLOR')); }, 650); },
   up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = S.jm === 2 ? 0 : 2; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
+const bIris = mkBtn({ x: 150, y: 34, w: 56, h: 36, cls: S.iris ? 'dark' : 'grey', text: 'IRIS', id: 'iris',
+  up: (e, c) => { if (c) return; S.iris = S.iris ? 0 : 1; save(); bIris.classList.toggle('dark', !!S.iris); bIris.classList.toggle('grey', !S.iris); irisSet(); ui.msg('IRIS ' + (S.iris ? 'ON' : 'OFF')); } });
 const HELP = {
   'sw:CRUSH': ['CRUSH FX', 'SWITCHES THE CRUSH STAGE  LOWER BIT DEPTH AND SAMPLE RATE  EARLY DIGITAL GRIT'],
   'sw:FILTER': ['FILTER FX', 'SWITCHES THE FILTER STAGE ON OR OFF'],
@@ -1739,6 +1816,7 @@ const HELP = {
   VOL: ['VOLUME', 'OUTPUT LEVEL  DOUBLE TAP FOR THE DEFAULT'],
   VARI: ['VARISPEED', 'SLOWER OR FASTER  DOUBLE TAP RESETS TO ZERO  LOCK KEEPS THE PITCH'],
   JOG: ['JOG', 'TOUCH TO HOLD THE DISC  MOVE IT BOTH WAYS TO SCRATCH  RELEASE TO PLAY ON  RING SHOWS PROGRESS'],
+  IRIS: ['IRIS', 'RAINBOW SHEEN ON THE DISC  IT DRIFTS WITH THE SPIN AND FOLLOWS YOUR FINGER  TAP  ON OR OFF'],
   SCR: ['JOG MODE', 'HOLD  DISC WHITE OR COLOR  TAP  SCRATCH ON OR OFF'],
   MIX: ['AUTOMIX', 'TAP TO CHOOSE OFF  4  8  OR 16 SECONDS  THE NEXT DISC FADES IN ON THE BEAT  LAMP BLINKS WHILE MIXING'],
   PLAY: ['PLAY / PAUSE', 'STARTS AND PAUSES THE DISC  HOLD  STOP AND BACK TO THE START'],
@@ -1766,6 +1844,7 @@ const HELP_RU = {
   VOL: ['ГРОМКОСТЬ', 'УРОВЕНЬ ВЫХОДА  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   VARI: ['ВАРИСПИД', 'МЕДЛЕННЕЕ ИЛИ БЫСТРЕЕ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ В НОЛЬ  LOCK СОХРАНЯЕТ ТОНАЛЬНОСТЬ'],
   JOG: ['ДЖОГ', 'КАСАНИЕ ДЕРЖИТ ДИСК  ВОДИ В ОБЕ СТОРОНЫ ДЛЯ СКРЕТЧА  ОТПУСТИ И ИГРА ПРОДОЛЖИТСЯ  КОЛЬЦО ПОКАЗЫВАЕТ ПРОГРЕСС'],
+  IRIS: ['РАДУГА', 'РАДУЖНЫЙ ОТБЛЕСК НА ДИСКЕ  ПЛЫВЁТ ВМЕСТЕ С ВРАЩЕНИЕМ И ДВИЖЕТСЯ ЗА ПАЛЬЦЕМ  ТАП  ВКЛЮЧИТЬ ИЛИ ВЫКЛЮЧИТЬ'],
   SCR: ['РЕЖИМ ДЖОГА', 'УДЕРЖИВАЙ  ДИСК БЕЛЫЙ ИЛИ ЦВЕТНОЙ  ТАП  СКРЕТЧ ВКЛ ИЛИ ВЫКЛ'],
   MIX: ['АВТОМИКС', 'ТАП МЕНЯЕТ  ВЫКЛ  4  8  ИЛИ 16 СЕКУНД  СЛЕДУЮЩИЙ ДИСК ВХОДИТ В ТАКТ  ЛАМПА МИГАЕТ ВО ВРЕМЯ МИКСА'],
   PLAY: ['ПУСК / ПАУЗА', 'ЗАПУСКАЕТ И СТАВИТ НА ПАУЗУ  УДЕРЖИВАЙ  СТОП И В НАЧАЛО'],
@@ -1893,6 +1972,9 @@ const ringHead = svgEl('circle', { r: 3.6, fill: '#cb4a36', stroke: '#e9ebee', '
 el('cdwell', chassis, 'left:' + (JX - 184) + 'px;top:' + (JY - 184) + 'px;width:368px;height:368px');
 const disc = el('cdisc', chassis, 'left:' + (JX - 168) + 'px;top:' + (JY - 168) + 'px;width:336px;height:336px');
 const cdrot = el('cdrot', disc); el('cdhole', disc);
+const irisEl = el('cdiris', disc); let irOff = 0;   // the iridescent sheen: its own layer above the label, its own switch (IRIS)
+function irisSet() { irisEl.style.display = S.iris ? '' : 'none'; if (S.iris) irisEl.style.transform = 'rotate(' + ((irOff - discAng * .3) % 360).toFixed(1) + 'deg)'; }
+irisEl.style.display = S.iris ? '' : 'none';
 cdrot.insertAdjacentHTML('afterbegin', '<svg class="lbl" viewBox="0 0 288 288"></svg>'); lblEl = cdrot.querySelector('svg.lbl');
 let lastRing = -1;
 function setRing(frac) {
@@ -1924,6 +2006,7 @@ disc.addEventListener('pointermove', e => {
   if (!jog.on || e.pointerId !== jog.id) return;
   const a = angOf(e); let d = a - jog.a0; if (d > 180) d -= 360; if (d < -180) d += 360;
   const dt = Math.max(1, e.timeStamp - jog.t0); jog.vel = jog.vel * .6 + (d / dt * 1000) * .4; jog.a0 = a; jog.t0 = e.timeStamp;
+  if (S.iris) { irOff += d * .7; irisSet(); }   // the sheen follows the finger
   if (jog.bend) return; discAng += d; if (!SCR.active && audio.paused && cur()) seekBy(d / 360 * 1.8);
 });
 const jogEnd = e => { if (e.pointerId === jog.id) { jog.on = false; if (jog.bend) jog.bend = false; else scrEnd(); } };
@@ -2040,7 +2123,7 @@ hit.addEventListener('pointercancel', () => { wdrag = false; clearTimeout(bpmTo)
 /* ================= library sheet ================= */
 const libEl = el('', chassis, ''); libEl.id = 'lib';
 libEl.innerHTML = '<div class="lh"><div class="lt">LIBRARY</div><div class="lb" data-a="add">ADD</div><div class="lb" data-a="goto">#</div><div class="lb" data-a="label">LABEL</div><div class="lb" data-a="demo">DEMO</div><div class="lb" data-a="clear">CLEAR</div><div class="lb done" data-a="done">DONE</div></div><div class="ll"></div><div class="lk"><div class="lkd">TRACK --</div><div class="lkp"><div class="lb" data-a="k1">1</div><div class="lb" data-a="k2">2</div><div class="lb" data-a="k3">3</div><div class="lb" data-a="k4">4</div><div class="lb" data-a="k5">5</div><div class="lb" data-a="k6">6</div><div class="lb" data-a="k7">7</div><div class="lb" data-a="k8">8</div><div class="lb" data-a="k9">9</div><div class="lb" data-a="kc">C</div><div class="lb" data-a="k0">0</div><div class="lb done" data-a="kgo">GO</div></div></div>';
-libEl.insertAdjacentHTML('beforeend','<div id="lbed"><div class="lt">DISC LABEL</div><div class="pv"><div class="cdrot"><svg class="lbl" viewBox="0 0 288 288"></svg></div><div class="cdhole"></div></div><div><label>LINE 1</label><input data-f="a" maxlength="60" autocomplete="off"></div><div><label>LINE 2</label><input data-f="b" maxlength="40" autocomplete="off"></div><div><label>NOTE (HANDWRITTEN)</label><input data-f="n" maxlength="40" autocomplete="off"></div><div><label>STYLE</label><div class="tp"><div class="lb" data-t="-1">AUTO</div><div class="lb" data-t="0">A</div><div class="lb" data-t="1">B</div><div class="lb" data-t="2">C</div><div class="lb" data-t="3">D</div><div class="lb" data-t="4">E</div><div class="lb" data-t="5">F</div><div class="lb" data-t="6">G</div><div class="lb" data-t="7">H</div><div class="lb" data-t="8">BLANK</div></div></div><div class="ac"><div class="lb" data-a="lreset">RESET</div><div class="lb done" data-a="ldone">OK</div></div></div>');
+libEl.insertAdjacentHTML('beforeend','<div id="lbed"><div class="lt">DISC LABEL</div><div class="pv"><div class="cdrot"><svg class="lbl" viewBox="0 0 288 288"></svg></div><div class="cdhole"></div></div><div><label>LINE 1</label><input data-f="a" maxlength="60" autocomplete="off"></div><div><label>LINE 2</label><input data-f="b" maxlength="40" autocomplete="off"></div><div><label>NOTE (HANDWRITTEN)</label><input data-f="n" maxlength="40" autocomplete="off"></div><div class="rc"><div><label>STYLE</label><div class="tp"><div class="lb" data-t="-1">AUTO</div><div class="lb" data-t="0">A</div><div class="lb" data-t="1">B</div><div class="lb" data-t="2">C</div><div class="lb" data-t="3">D</div><div class="lb" data-t="4">E</div><div class="lb" data-t="5">F</div><div class="lb" data-t="6">G</div><div class="lb" data-t="7">H</div><div class="lb" data-t="8">BLANK</div><div class="lb" data-t="9">ART</div></div></div><div class="ac"><div class="lb" data-a="lreset">RESET</div><div class="lb done" data-a="ldone">OK</div></div></div></div>');
 const lbed = libEl.querySelector('#lbed'), lbPv = lbed.querySelector('svg.lbl'), lbPvRot = lbed.querySelector('.cdrot');
 let lbTrack = null;
 function lbPaint() {
@@ -2159,7 +2242,7 @@ function step(now) {
     const du = audio.duration || (SCR.buf && SCR.buf.duration) || 0, pr = du > 0 ? clamp(curPos() / du, 0, 1) : 0;
     ds += (DISC_DPS(pr) * dv - ds) * (1 - Math.exp(-dt / .16)); if (Math.abs(ds) < .5) ds = 0; discAng += ds * dt;
   } else { dv = SCR.active ? SCR.rate : dv; ds = 198 * dv; }
-  if (discAng !== lastAng) { const tf = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; cdrot.style.transform = tf; if (mixOv) mixOv.style.transform = tf; spn.style.transform = tf; lastAng = discAng; }
+  if (discAng !== lastAng) { const tf = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; cdrot.style.transform = tf; if (mixOv) mixOv.style.transform = tf; spn.style.transform = tf; if (S.iris) irisEl.style.transform = 'rotate(' + ((irOff - discAng * .3) % 360).toFixed(1) + 'deg)'; lastAng = discAng; }
   const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? curPos() / d : 0);
   if (!splashing && now - lastDraw >= 50 && now > uiBusyUntil && !document.hidden) { lastDraw = now; drawDisplay(now); }
 }
@@ -2257,34 +2340,6 @@ function drawIcon(S) {
 }
 
 
-/* ================= live disc: the gloss band follows the tilt of the phone ================= */
-{
-  let busy = 0; document.addEventListener('pointerdown', () => { busy = 1; }, true); ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { busy = 0; if (!st.raf) st.raf = requestAnimationFrame(apply); }, true));
-  const st = { on: 0, asked: 0, g0: null, b0: null, x: 0, y: 0, tx: 0, ty: 0, raf: 0 };
-  const apply = () => {
-    st.raf = 0; st.x += (st.tx - st.x) * .18; st.y += (st.ty - st.y) * .18;
-    if (!busy) { disc.style.setProperty('--gx', (-34 + st.x * 3).toFixed(1)); disc.style.setProperty('--gr', (st.y * .7).toFixed(1)); }   // not while a finger is on a control
-    if (Math.abs(st.tx - st.x) > .05 || Math.abs(st.ty - st.y) > .05) st.raf = requestAnimationFrame(apply);
-  };
-  const onOri = e => {
-    if (e.gamma == null || e.beta == null) return;
-    if (st.g0 == null) { st.g0 = e.gamma; st.b0 = e.beta; }
-    st.g0 += (e.gamma - st.g0) * .008; st.b0 += (e.beta - st.b0) * .008;   // the neutral position drifts to however the phone is held
-    let dx = e.gamma - st.g0, dy = e.beta - st.b0;
-    const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    if (Math.abs(a) === 90) { const t = dx; dx = a === 90 ? dy : -dy; dy = a === 90 ? -t : t; }
-    st.tx = Math.max(-30, Math.min(30, dx * 1.2)); st.ty = Math.max(-30, Math.min(30, dy * .9));
-    if (!st.raf) st.raf = requestAnimationFrame(apply);
-  };
-  const enable = () => { if (st.on) return; st.on = 1; window.addEventListener('deviceorientation', onOri, true); };
-  const D = window.DeviceOrientationEvent, needAsk = !!(D && typeof D.requestPermission === 'function');
-  const ask = () => {
-    if (st.on || st.asked || !needAsk) return; st.asked = 1;   // iOS wants a tap first
-    D.requestPermission().then(r => { if (r === 'granted') { enable(); ui.msg('TILT GLARE ON', 1400); } }).catch(() => { });
-  };
-  if (!needAsk && D) enable();
-  disc.addEventListener('pointerup', ask, true); disc.addEventListener('click', ask, true);
-}
 /* ================= boot ================= */
 /* ================= landscape (phones): a viewing mode ================= */
 const LOLED_REST = 0, LAND_HIDE_MS = 3500;   // display opacity at rest, bar timeout
@@ -2295,7 +2350,7 @@ const lOled = el('', landEl, 'position:absolute;left:0;top:0;width:0;height:0;tr
 const mk = (cls, txt) => { const d = document.createElement('div'); d.className = cls; if (txt != null) d.textContent = txt; return d; };
 const lBar = mk(''); lBar.id = 'lbar'; landEl.appendChild(lBar);
 const lHint = mk(''); lHint.id = 'lhint'; landEl.appendChild(lHint);
-const lCtx = mk('lr'), lMain = mk('lr'); lBar.appendChild(lMain);
+const lMain = mk('lr'); lBar.appendChild(lMain);
 let fid = 700;
 /* a landscape key presses the real key: the same pointer events, so every behaviour (hold, long press, clicks) stays where it was */
 function lkey(label, tgt, o) {
@@ -2309,7 +2364,6 @@ function lkey(label, tgt, o) {
   return b;
 }
 const fnBtn = t => [...PGS[1].querySelectorAll('.btn')].find(b => b.textContent === t);
-const padBtn = i => [...PGS[0].querySelectorAll('.btn')].find(b => b.textContent === String(i + 1));
 const swAll = () => document.querySelectorAll('.sw');
 const libBtn = document.querySelector('.btn[data-id="lib"]');
 const lLib = lkey('LIB', libBtn, { cls: '' }); lLib.id = 'llib'; landEl.appendChild(lLib);
@@ -2326,11 +2380,17 @@ function landCtx() {
   fk.addEventListener('pointerdown', () => { const on = fxOn(); [1, 2, 3].forEach(i => { if (sw[i].classList.contains('on') !== (!on && i < 3)) sw[i].dispatchEvent(new PointerEvent('pointerdown', { pointerId: 900 + i, bubbles: true, cancelable: true })); }); landState(); });
   lMain.appendChild(fk);
   lMain.appendChild(lkey('LOOP', fnBtn('LOOP'), { st: () => loop && loop.on }));
-  landState();
+  landState(); landCaps();
+}
+function landCaps() {   // tiny group captions above the keys of the landscape bar
+  lMain.style.position = 'relative'; lMain.querySelectorAll('.lgl').forEach(n => n.remove());
+  const ks = [...lMain.children].filter(n => !n.classList.contains('sep') && !n.classList.contains('lgl')); if (ks.length < 6) return;
+  const cap = (t, a, b) => { const x0 = a.offsetLeft, x1 = b.offsetLeft + b.offsetWidth; if (!(x1 > x0)) return; const e = document.createElement('i'); e.className = 'lgl'; e.textContent = t; e.style.left = (x0 + x1) / 2 + 'px'; lMain.appendChild(e); };
+  cap('TRANSPORT', ks[0], ks[2]); cap('PERFORM', ks[3], ks[5]);
 }
 function landState() { land.st.forEach(x => x[0].classList.toggle('on', !!x[1]())); const p = lMain.querySelector('[data-play]'); if (p) p.innerHTML = bPlay.innerHTML; }
 function landShow(on) {
-  lBar.classList.toggle('show', on); lLib.classList.toggle('show', on); lHint.classList.toggle('hide', on);
+  lBar.classList.toggle('show', on); lLib.classList.toggle('show', on); if (on) landCaps(); lHint.classList.toggle('hide', on);
   lOled.style.opacity = on ? 1 : LOLED_REST; lOled.style.pointerEvents = on ? '' : 'none';   // at rest the display stays faintly lit
 }
 function landPoke() { if (!land.on) return; landShow(true); landState(); clearTimeout(land.to); land.to = setTimeout(() => landShow(false), LAND_HIDE_MS); }
@@ -2393,7 +2453,7 @@ function landSync() {
   }
   if (land.on) landLayout();
 }
-const _playState = ui.playState; ui.playState = p => { _playState(p); if (land.on) landState(); };
+const _playState = ui.playState; ui.playState = p => { keepAlive(!!p && SCR.active); _playState(p); if (land.on) landState(); };
 fit();
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', () => setTimeout(fit, 120));
