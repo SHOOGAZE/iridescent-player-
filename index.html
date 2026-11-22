@@ -199,7 +199,7 @@ html.lite .knob.st .krot{transition:none}
 #stage{width:500px;height:1070px}
 .vslot{position:absolute;width:14px;border-radius:7px;background:#17181b;pointer-events:none;
   box-shadow:inset 0 1px 3px #000,0 0 0 1.5px #a3a9b1}
-.vfader{position:absolute;touch-action:none;cursor:ns-resize;width:56px}
+.vfader{position:absolute;z-index:4;touch-action:none;cursor:ns-resize;width:56px}
 .vfader::before{content:"";position:absolute;inset:0 -14px}
 .vtab{position:absolute;left:8px;width:40px;height:56px;border-radius:5px;
   background:linear-gradient(180deg,#fdfdfe,#e3e5e9);
@@ -233,7 +233,7 @@ html.lite .knob.st .krot{transition:none}
   box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,inset 0 1px 1px rgba(255,255,255,.3)}
 .hubbtn::before{content:"";position:absolute;inset:-16px}
 .hubbtn svg{width:34px;height:34px;fill:#ff5a45;filter:drop-shadow(0 0 5px rgba(224,90,70,.8))}
-.hubbtn.on{box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,0 0 0 7px rgba(203,74,54,.55),0 0 16px 6px rgba(203,74,54,.35),inset 0 1px 1px rgba(255,255,255,.3)}
+.hubbtn.on{box-shadow:0 5px 9px rgba(0,0,0,.45),0 0 0 3px #e9ebee,0 0 0 4px #8f959e,inset 0 1px 1px rgba(255,255,255,.3)}
 .hubbtn.down{transform:scale(.96)}
 .led.cuep{background:#fff;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px var(--red)}
 .led.loopp{background:#1d1f24;box-shadow:0 0 0 2.5px rgba(232,235,238,.92),0 0 0 4px #1d1f24}
@@ -517,7 +517,7 @@ function mkSwitch(x, y, on, onChange) {
 }
 /* ================= state ================= */
 const SK = 'deck.s', CK = 'deck.cues';
-const S = Object.assign({ vol: .7, bass: .5, treb: .5, filt: .5, dsk: 0, tape: .4, fxTape: 1, fxFilt: 1, fxComp: 0, range: 0, src: 0, lock: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0 },
+const S = Object.assign({ vol: .7, bass: .5, treb: .5, filt: .5, dsk: 0, tape: .4, fxTape: 1, fxFilt: 1, fxComp: 0, range: 0, src: 0, lock: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
 S.vari = 0; // varispeed always starts at 0
 const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) { /* ignore */ } };
@@ -1208,7 +1208,7 @@ function makeDemo() {
 /* ================= UI: frame ================= */
 S.src = 0;
 [[12, 1050, 60], [474, 1050, -15]].forEach(c => el('screw', chassis, 'left:' + c[0] + 'px;top:' + c[1] + 'px;--r:' + c[2] + 'deg'));
-el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:226px'); el('groove', chassis, 'top:636px');
+el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:214px'); el('groove', chassis, 'top:656px');
 el('vline', chassis, 'left:292px;top:8px;height:74px');
 const RED = '#b2432f';
 const pad2 = n => (n < 10 ? '0' : '') + n;
@@ -1230,9 +1230,10 @@ lab('8  16', 252, 76, { cls: 'sm' });
 lab('LOOM FX', 394, 76, { cls: 'sm', c: RED });
 
 /* ---- dot-matrix display ---- */
-const COLS = 142, ROWS = 34, PITCH = 3, PAD_ = 6, DX = 31, DY = 100;
-el('redsq', chassis, 'left:' + DX + 'px;top:' + (DY - 10) + 'px');
-const bz = el('dm', chassis, 'left:' + DX + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
+const COLS = 142, ROWS = 34, PITCH = 3, PAD_ = 6, DX = 31, DY = 104;
+const DSC = .82, DW = COLS * PITCH + PAD_ * 2, DXC = 26;
+el('redsq', chassis, 'left:' + DXC + 'px;top:' + (DY - 10) + 'px');
+const bz = el('dm', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
 const dpr = Math.min(window.devicePixelRatio || 1, 2);
 const cv = document.createElement('canvas');
 cv.width = Math.round(COLS * PITCH * 2 * dpr); cv.height = Math.round(ROWS * PITCH * 2 * dpr);
@@ -1312,12 +1313,11 @@ G = {}; Object.keys(F).forEach(k => { G[k] = F[k].split(' ').map(r => r.split(''
   const width = (s, sc) => String(s).length * 6 * (sc || 1) - (sc || 1);
 
 /* ================= UI: jog zone (faders, disc, ring) ================= */
-const JX = 250, JY = 432;
-lab('VOLUME', 44, 254, { cls: 'lg' }); lab('VARISPEED', 456, 254, { cls: 'lg' });
-const volLab = lab(String(Math.round(S.vol * 100)), 44, 620, { cls: 'lg', c: RED });
-const varLab = lab('+0.0%', 456, 620, { cls: 'lg', c: RED });
-lab('MAX', 44, 272, { cls: 'sm', s: 7.5 }); lab('MIN', 44, 602, { cls: 'sm', s: 7.5 });
-lab('+', 456, 272, { cls: 'sm', s: 9 }); lab('-', 456, 602, { cls: 'sm', s: 9 });
+const JX = 232, JY = 434;
+lab('VARISPEED', 462, 254, { cls: 'lg' });
+S.vol = .7;   /* output level is fixed: no volume fader */
+const varLab = lab('+0.0%', 462, 620, { cls: 'lg', c: RED });
+lab('+', 462, 272, { cls: 'sm', s: 9 }); lab('-', 462, 602, { cls: 'sm', s: 9 });
 function mkFader(o) {
   const f = el('vfader', chassis, 'left:' + (o.x - 28) + 'px;top:' + (o.y - 28) + 'px;width:56px;height:' + (o.len + 56) + 'px');
   el('vslot', chassis, 'left:' + (o.x - 7) + 'px;top:' + (o.y - 8) + 'px;height:' + (o.len + 16) + 'px');
@@ -1351,8 +1351,7 @@ function mkFader(o) {
   f.addEventListener('pointerup', end); f.addEventListener('pointercancel', end);
   return { el: f, set(nv) { v = nv; render(); }, get value() { return v; } };
 }
-mkFader({ x: 44, y: 292, len: 290, value: S.vol, def: .7, onChange: v => { S.vol = v; save(); initAudio(); applyFx(); volLab.textContent = Math.round(v * 100); } });
-const vFader = mkFader({ x: 456, y: 292, len: 290, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
+const vFader = mkFader({ x: 462, y: 292, len: 290, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
 
 /* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
 const hub = el('hubbtn', chassis, 'left:' + (JX - 48) + 'px;top:' + (JY - 48) + 'px;width:96px;height:96px');
@@ -1440,8 +1439,16 @@ const ledA = led(fc(1), fy(1) - 12, ''), ledB = led(fc(2), fy(2) - 12, ''), ledL
   } });
   lab('0', k[2] - 28, 1012, { cls: 'sm', s: 7.5 }); lab('10', k[2] + 28, 1012, { cls: 'sm', s: 7.5 });
 });
-mkBtn({ x: fx(7), y: fy(7), w: FW, h: FH, cls: 'grey', text: 'LIB', id: 'lib', up: (e, c) => { if (!c) libOpen(); } });
-lab('LIBRARY', fc(7), fy(7) + FH + 16, { cls: 'sm' });
+const BJ = [1, 4, 8, 16, -16, -8, -4, -1], bjTxt = () => (BJ[S.bj] > 0 ? '+' : '') + BJ[S.bj];
+let bjLong = false, bjTo = 0;
+const bJump = mkBtn({ x: fx(7), y: fy(7), w: FW, h: FH, cls: 'grey', text: bjTxt(), id: 'jump',
+  down: () => { bjLong = false; clearTimeout(bjTo); bjTo = setTimeout(() => { bjLong = true; S.bj = (S.bj + 1) % BJ.length; save(); bJump.textContent = bjTxt(); ui.msg('JUMP ' + bjTxt() + ' BEATS', 1100); }, 450); },
+  up: (e, c) => {
+    clearTimeout(bjTo); if (c || bjLong) return;
+    const t = cur(), eb = effBpm(t); if (!t || !eb) { ui.msg('NO BPM', 1100); return; }
+    seek(clamp(curPos() + BJ[S.bj] * beatLen(t), 0, Math.max(0, (audio.duration || (SCR.buf && SCR.buf.duration) || 0) - .06))); ui.msg('JUMP ' + bjTxt(), 700);
+  } });
+lab('BEAT JUMP', fc(7), fy(7) + FH + 16, { cls: 'sm' });
 chassis = _c1;
 
 
@@ -1480,6 +1487,7 @@ const HELP = {
   LOOP: ['LOOP', 'TAP  AUTO LOOP ON THE BEAT 1/4 TO 4 BARS  HOLD  LOOP ROLL  THE TRACK KEEPS RUNNING UNDER IT AND SLIPS BACK ON RELEASE'],
   MODE: ['PLAY MODE', 'NORMAL  REPEAT ONE  REPEAT ALL  SHUFFLE'],
   LOCK: ['PITCH LOCK', 'KEEPS THE PITCH WHEN THE SPEED CHANGES'],
+  JUMP: ['BEAT JUMP', 'TAP JUMPS BY THE SHOWN NUMBER OF BEATS  HOLD TO CHANGE THE STEP  NEEDS A DETECTED BPM'],
   LIB: ['LIBRARY', 'OPENS THE DISC SHELF  ADD FILES OR LOAD THE DEMO DISC'],
   'kn:BASS': ['BASS', 'LOW SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
   'kn:TREBLE': ['TREBLE', 'HIGH SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
@@ -1510,6 +1518,7 @@ const HELP_RU = {
   LOOP: ['ЛУП', 'ТАП  АВТОЛУП НА ДОЛЮ ОТ 1/4 ДО 4 ТАКТОВ  УДЕРЖИВАЙ  ЛУП РОЛЛ  ТРЕК ИДЁТ ПОД НИМ И ВОЗВРАЩАЕТСЯ ПРИ ОТПУСКАНИИ'],
   MODE: ['РЕЖИМ ИГРЫ', 'ОБЫЧНЫЙ  ПОВТОР ОДНОГО  ПОВТОР ВСЕХ  СЛУЧАЙНО'],
   LOCK: ['ФИКС ТОНА', 'СОХРАНЯЕТ ТОНАЛЬНОСТЬ ПРИ СМЕНЕ СКОРОСТИ'],
+  JUMP: ['ПРЫЖОК ПО БИТАМ', 'ТАП ПРЫГАЕТ НА ПОКАЗАННОЕ ЧИСЛО БИТОВ  УДЕРЖИВАЙ ЧТОБЫ СМЕНИТЬ ШАГ  НУЖЕН BPM'],
   LIB: ['БИБЛИОТЕКА', 'ОТКРЫВАЕТ ПОЛКУ ДИСКОВ  ДОБАВЬ ФАЙЛЫ ИЛИ ЗАГРУЗИ ДЕМО-ДИСК'],
   'kn:BASS': ['БАС', 'НИЗКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   'kn:TREBLE': ['ВЧ', 'ВЫСОКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
@@ -1614,17 +1623,16 @@ let frostEl = null;
 
 /* ================= disc + progress ring (built above the board) ================= */
 {
-  const hz = el('haze round', chassis, 'left:' + (JX - 196) + 'px;top:' + (JY - 196) + 'px;width:392px;height:392px');
+  const hz = el('haze round', chassis, 'left:' + (JX - 212) + 'px;top:' + (JY - 212) + 'px;width:424px;height:424px');
   chassis.insertBefore(hz, frostEl.nextSibling);
 }
 const ringLeds = [];
-for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; ringLeds.push(led(JX + Math.sin(a) * 180, JY - Math.cos(a) * 180, '')); }
-el('cdwell', chassis, 'left:' + (JX - 159) + 'px;top:' + (JY - 159) + 'px;width:318px;height:318px');
-const disc = el('cdisc', chassis, 'left:' + (JX - 144) + 'px;top:' + (JY - 144) + 'px;width:288px;height:288px');
+for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; ringLeds.push(led(JX + Math.sin(a) * 191, JY - Math.cos(a) * 191, '')); }
+el('cdwell', chassis, 'left:' + (JX - 174) + 'px;top:' + (JY - 174) + 'px;width:348px;height:348px');
+const disc = el('cdisc', chassis, 'left:' + (JX - 158) + 'px;top:' + (JY - 158) + 'px;width:316px;height:316px');
 const cdrot = el('cdrot', disc); el('cdhole', disc);
 cdrot.insertAdjacentHTML('afterbegin', '<svg class="lbl" viewBox="0 0 288 288"></svg>'); lblEl = cdrot.querySelector('svg.lbl');
-lab('JOG', JX, JY + 197, { cls: 'sm' });
-const beatSq = el('redsq', chassis, 'left:' + (JX - 4) + 'px;top:' + (JY - 202) + 'px');
+lab('JOG', JX, JY + 207, { cls: 'sm' });
 let lastRing = 0;
 function setRing(frac) {
   const n = Math.floor(clamp(frac, 0, 1) * 72);
@@ -1730,8 +1738,9 @@ function drawDisplay0(now) {
     for (let r = y0; r <= base; r++) dot(1 + ph, r, 1);
   }
 }
+mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'grey', text: 'LIB', id: 'lib', up: (e, c) => { if (!c) libOpen(); } });
 /* ---- display tap: toggle time / seek on the waveform ---- */
-const hit = el('dmhit', chassis, 'left:' + DX + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
+const hit = el('dmhit', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
 let wdrag = false;
 function waveSeek(e) { const r = hit.getBoundingClientRect(), d = audio.duration; if (!isFinite(d)) return; const X = (e.clientX - r.left) / r.width * (COLS * PITCH + PAD_ * 2); seek(clamp((X - PAD_ - 1.5 * PITCH) / (139 * PITCH), 0, 1) * d); }
 hit.addEventListener('pointerdown', e => {
@@ -1858,9 +1867,6 @@ function step(now) {
   else { nudge += (1 - nudge) * .3; if (Math.abs(nudge - 1) < .002) nudge = 1; }
   const want = clamp(baseRate() * nudge, .25, 4);
   if (Math.abs(rateCur - want) > .0003) applyRate();
-  { const tt = cur(), eb = effBpm(tt);
-    if (eb && playing) { const ph = (((curPos() - tt.off) / beatLen(tt)) % 1 + 1) % 1; beatSq.style.opacity = (.3 + .7 * Math.exp(-ph * 5)).toFixed(2); if (!beatSq.style.boxShadow) beatSq.style.boxShadow = '0 0 9px rgba(203,74,54,.7)'; }
-    else if (beatSq.style.opacity) { beatSq.style.opacity = ''; beatSq.style.boxShadow = ''; } }
   if (!jog.on || jog.bend) {
     const follow = SCR.active && !SCR.cd, tg = follow ? SCR.rate : (SCR.active ? (SCR.spinUntil ? SCR.motor : SCR.rate) : (playing ? audio.playbackRate : 0));
     if (follow) dv = tg; else dv += (tg - dv) * (1 - Math.exp(-dt / (tg > dv ? .2 : .55)));
