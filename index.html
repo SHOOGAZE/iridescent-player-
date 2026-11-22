@@ -32,7 +32,7 @@ html,body{margin:0;height:100%;background:#0b0c0f;overflow:hidden;overscroll-beh
 .rim{position:absolute;left:-11px;top:-11px;right:-11px;bottom:-11px;border-radius:29px;pointer-events:none;
   background:linear-gradient(115deg,#fdfdfe 0%,#a6abb3 14%,#f4f5f7 28%,#838993 44%,#eef0f2 58%,#9aa0a9 74%,#fafbfb 88%,#b3b8bf 100%);
   box-shadow:0 34px 48px rgba(0,0,0,.6),0 8px 14px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 #fff}
-.pcb{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.5}   /* the board is felt through the frost, not read */
+.pcb{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.3}   /* the board is felt through the frost, not read */
 .frost{position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(160deg,rgba(238,240,243,.62) 0%,rgba(228,231,235,.55) 55%,rgba(220,224,228,.62) 100%)}
 .frost::after{content:"";position:absolute;inset:0;
@@ -219,7 +219,7 @@ html.lite .knob.st .krot{transition:none}
 .cdisc{position:absolute;border-radius:50%;touch-action:none;cursor:grab;
   box-shadow:0 6px 11px rgba(40,50,62,.4),0 0 0 1px #8f959e,inset 0 0 0 2px rgba(255,255,255,.8)}
 .cdisc::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:3;
-  background:linear-gradient(122deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.7) 41%,rgba(255,255,255,0) 56%)}
+  background:linear-gradient(var(--ga,122deg),rgba(255,255,255,0) calc(var(--gp,41%) - 15%),rgba(255,255,255,.7) var(--gp,41%),rgba(255,255,255,0) calc(var(--gp,41%) + 15%))}
 .cdrot{position:absolute;inset:0;border-radius:50%;will-change:transform;
   background:
    repeating-radial-gradient(circle,rgba(70,80,92,.07) 0 .8px,rgba(255,255,255,.1) .8px 1.8px),
@@ -308,6 +308,25 @@ html.lite .knob.st .krot{transition:none}
 .pgd{position:absolute;left:0;right:0;top:1052px;height:8px;display:flex;justify-content:center;gap:10px;pointer-events:none}
 .pgd i{width:7px;height:7px;border-radius:50%;background:rgba(40,44,52,.28);pointer-events:auto;transition:background .2s,transform .2s}
 .pgd i.on{background:#2a2d34;transform:scale(1.25)}
+
+/* landscape on phones: a viewing mode. disc in the middle, the display top right, one bar of keys that fades away */
+#land{position:fixed;inset:0;z-index:40;display:none;overflow:hidden;background:linear-gradient(#e8ebef,#d5d9de)}
+html.land #land{display:block}html.land #desk{display:none}
+#lbar{position:absolute;left:50%;bottom:max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;padding:11px;border-radius:24px;background:rgba(236,239,243,.64);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 1.5px rgba(255,255,255,.75),0 8px 24px rgba(40,50,70,.25);transform:translate(-50%,26px);opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease}
+#lbar.show{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#lbar .lr{display:flex;gap:7px;align-items:stretch}
+#lbar .sep{width:1px;background:rgba(120,126,136,.35);margin:4px 3px}
+.lk{position:relative;height:50px;min-width:64px;padding:0 6px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 var(--mono);letter-spacing:.12em;color:#2b2e33;touch-action:none;cursor:pointer;
+  background:linear-gradient(rgba(255,255,255,.8),rgba(222,226,231,.85));box-shadow:0 2px 0 #b7bcc3,0 0 0 3px rgba(200,204,210,.5),inset 0 1px 0 #fff}
+.lk.d{background:linear-gradient(#34373b,#17181a);color:#e8e8e8;box-shadow:0 2px 0 #000,0 0 0 3px rgba(190,194,200,.6)}
+.lk.on{color:#c4361b;box-shadow:0 2px 0 #b7bcc3,0 0 0 3px #d9482b66,inset 0 0 0 1.5px #d9482b}
+.lk.d.on{color:#fff;box-shadow:0 2px 0 #000,0 0 0 3px #d9482b99}
+.lk.down{transform:translateY(1px) scale(.97)}
+.lk svg{width:22px;height:16px;fill:var(--ink)}
+#llib{position:absolute;z-index:3;height:32px;min-width:54px;font-size:9px;opacity:0;pointer-events:none;transition:opacity .4s ease;background:rgba(255,255,255,.2);box-shadow:0 0 0 2px rgba(180,185,192,.6),inset 0 1px 0 rgba(255,255,255,.7)}
+#llib.show{opacity:1;pointer-events:auto}
+#lhint{position:absolute;left:50%;bottom:max(7px,env(safe-area-inset-bottom));width:70px;height:4px;margin-left:-35px;border-radius:2px;background:rgba(90,96,106,.35);pointer-events:none;transition:opacity .4s ease}
+#lhint.hide{opacity:0}
 </style>
 
 </head>
@@ -367,12 +386,17 @@ function led(x, y, cls, parent) {
 /* ================= view / fit (portrait, no rotation) ================= */
 const view = { s: 1, rot: 0 };
 function toLocal(dx, dy) { return { x: dx / view.s, y: dy / view.s }; }
+/* the notch / Dynamic Island and the rounded corners: the deck lives inside the safe area (the page runs edge to edge) */
+const saProbe = document.createElement('div'); saProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)'; document.body.appendChild(saProbe);
 function fit() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const s = Math.min(Math.min(vw / (PW + 26), vh / (PH + 26)), 2);
+  const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(saProbe);
+  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0, st = parseFloat(cs.paddingTop) || 0;
+  const aw = vw - sl - sr, ah = vh - st;
+  const s = Math.min(Math.min(aw / (PW + 26), ah / (PH + 26)), 2);
   view.s = s;
-  stage.style.transform = 'translate(' + (vw - PW * s) / 2 + 'px,' + (vh - PH * s) / 2 + 'px) scale(' + s + ')';
+  stage.style.transform = 'translate(' + (sl + (aw - PW * s) / 2) + 'px,' + (st + (ah - PH * s) / 2) + 'px) scale(' + s + ')';
   glowFit();
+  if (typeof landSync === 'function') landSync();
 }
 /* roomy screens (tablet / PC): the disc's own colours bleed softly into the background; phones in landscape get a rotate hint */
 function glowFit() {
@@ -380,7 +404,7 @@ function glowFit() {
   const vw = window.innerWidth, vh = window.innerHeight;
   const roomy = vw > PW * view.s + 220;   // never on phones: a big blur costs GPU and can starve audio
   g.style.display = roomy ? 'block' : 'none'; g.style.opacity = roomy ? '.42' : '0';
-  if (t) t.style.display = (vh < 500 && vw > vh * 1.25) ? 'block' : 'none';
+  if (t) t.style.display = 'none';   // landscape on phones is a real view now
 }
 function mkKnob(o) {
   const d = o.d, pad = 18, size = d + pad * 2;
@@ -476,6 +500,23 @@ function mkKnob(o) {
   k.addEventListener('wheel', e => { e.preventDefault(); if (n) api.setIndex(clamp(api.index + (e.deltaY < 0 ? 1 : -1), 0, n - 1)); else api.set(v - e.deltaY / 900); }, { passive: false });
   return api;
 }
+/* ---- interface sounds: short synthesised ticks, straight to the output (not through the player's effects) ---- */
+let uiNoise = null, uiLast = 0;
+function uiSnd(kind, tone) {
+  if (!S.clk) return;
+  try {
+    initAudio(); if (!ctx) return; if (ctx.state !== 'running') ctx.resume();
+    const t = ctx.currentTime + .002;
+    if (!uiNoise) { uiNoise = ctx.createBuffer(1, 2205, ctx.sampleRate); const d = uiNoise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); }
+    const burst = (f, q, g, dly, dur) => { const s = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), gn = ctx.createGain(); s.buffer = uiNoise; bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; gn.gain.value = g; s.connect(bp); bp.connect(gn); gn.connect(ctx.destination); s.start(t + dly, 0, dur); };
+    const thump = (f0, f1, g, dly, dur) => { const o = ctx.createOscillator(), gn = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t + dly); o.frequency.exponentialRampToValueAtTime(f1, t + dly + dur); gn.gain.setValueAtTime(0, t + dly); gn.gain.linearRampToValueAtTime(g, t + dly + .002); gn.gain.exponentialRampToValueAtTime(.0001, t + dly + dur); o.connect(gn); gn.connect(ctx.destination); o.start(t + dly); o.stop(t + dly + dur + .01); };
+    /* silicone keys: a dull, quiet pat, nothing bright */
+    if (kind === 'key') { burst(1500, .9, .2, 0, .018); thump(150, 78, .07, 0, .05); }
+    else if (kind === 'pad') { const f = 120 * Math.pow(2, ((tone | 0) % 8) / 12 * 1.5); burst(1300, .9, .18, 0, .02); thump(f * 1.6, f, .08, 0, .07); }
+    else if (kind === 'rel') { burst(2200, 1.2, .07, 0, .012); }
+    else if (kind === 'sw') { burst(1800, 1.2, .2, 0, .012); thump(200, 110, .05, 0, .03); burst(1500, 1.2, .13, .028, .012); }
+  } catch (e) { /* ignore */ }
+}
 /* ---- buttons ---- */
 function mkBtn(o) {
   const slot = el('slot', chassis);
@@ -491,11 +532,13 @@ function mkBtn(o) {
     pid = e.pointerId;
     try { b.setPointerCapture(pid); } catch (_) { }
     b.classList.add('down');
+    uiSnd(/\bdark\b/.test(o.cls || '') && /^[1-8]$/.test(o.text || '') ? 'pad' : 'key', (parseInt(o.text, 10) || 1) - 1);
     if (o.down) o.down(e);
   });
   const up = e => {
     if (e.pointerId !== pid) return;
     pid = null; b.classList.remove('down');
+    if (e.type !== 'pointercancel') uiSnd('rel');
     if (o.up) o.up(e, e.type === 'pointercancel');
   };
   b.addEventListener('pointerup', up);
@@ -505,7 +548,7 @@ function mkBtn(o) {
 function mkSwitch(x, y, on, onChange) {
   const s = el('sw' + (on ? ' on' : ''), chassis, 'left:' + x + 'px;top:' + y + 'px');
   el('slot2', s); el('tab', s);
-  s.addEventListener('pointerdown', e => { e.preventDefault(); s.classList.toggle('on'); onChange(s.classList.contains('on') ? 1 : 0); });
+  s.addEventListener('pointerdown', e => { e.preventDefault(); uiSnd('sw'); s.classList.toggle('on'); onChange(s.classList.contains('on') ? 1 : 0); });
   return s;
 }
 
@@ -520,7 +563,7 @@ function mkSwitch(x, y, on, onChange) {
 }
 /* ================= state ================= */
 const SK = 'deck.s', CK = 'deck.cues';
-const S = Object.assign({ vol: .7, bass: .5, treb: .5, filt: .5, dsk: 0, tape: .4, fxTape: 1, fxFilt: 1, fxComp: 0, range: 0, src: 0, lock: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
+const S = Object.assign({ vol: .7, bass: .5, treb: .5, filt: .5, dsk: 0, tape: .4, fxTape: 1, fxFilt: 1, fxComp: 0, range: 0, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
 S.vari = 0; // varispeed always starts at 0
 let saveT = 0;
@@ -600,12 +643,13 @@ function initAudio() {
   const msp = ctx.createChannelSplitter(2), aL = ctx.createAnalyser(), aR = ctx.createAnalyser(); aL.fftSize = aR.fftSize = 512; lim.connect(msp); msp.connect(aL, 0); msp.connect(aR, 1);   // L/R level meter taps
   const src = ctx.createMediaElementSource(audio); let elg = null;
   if (GAPLESS) { elg = ctx.createGain(); src.connect(elg); elg.connect(bus); } else src.connect(bus);
-  E = { aL, aR, bus, bass, treb, tape, flt, fl, fh, comp, g1, g2, lp, hg, vol, src, elg, line: null, stream: null };
+  E = { aL, aR, bus, bass, treb, tape, flt, fl, fh, comp, g1, g2, lp, hg, vol, src, elg };
   applyFx();
   return E;
 }
 const filtHz = v => { const x = (v - .5) * 2, a = Math.abs(x) < .04 ? 0 : (Math.abs(x) - .04) / .96; return { lp: x < 0 ? 20000 * Math.pow(.012, a) : 20000, hp: x > 0 ? 20 * Math.pow(300, a) : 20, q: .7 + a * 2.2 }; };
 const fxLast = new Map();
+let hissOn = false;
 function applyFx() {
   if (!E) return;
   const t = ctx.currentTime, ta = S.tape;
@@ -614,20 +658,12 @@ function applyFx() {
   P(E.treb.gain, (S.treb - .5) * 24, .06);
   P(E.vol.gain, S.vol * S.vol * 1.2, .04);
   P(E.g1.gain, ta * .0016, .1); P(E.g2.gain, ta * .00025, .1);
-  P(E.lp.frequency, 14000 - ta * 9500, .1); P(E.hg.gain, ta * ta * .006, .1);
+  P(E.lp.frequency, 14000 - ta * 9500, .1); P(E.hg.gain, hissOn ? ta * ta * .006 : 0, hissOn ? .08 : .3);   // tape hiss belongs to a running tape: silent when stopped
   const fq = filtHz(S.filt); P(E.fl.frequency, fq.lp, .05); P(E.fh.frequency, fq.hp, .05); P(E.fl.Q, fq.q, .05); P(E.fh.Q, fq.q, .05);
   E.tape.set(S.fxTape); E.flt.set(S.fxFilt); E.comp.set(S.fxComp);
 }
 let fxT = 0;
 function applyFxSoon() { if (!fxT) fxT = setTimeout(() => { fxT = 0; applyFx(); }, 40); }   // knob turns are folded into one update per 40 ms
-async function lineOn() {
-  try {
-    initAudio();
-    const st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-    E.stream = st; E.line = ctx.createMediaStreamSource(st); E.line.connect(E.bus); return true;
-  } catch (e) { return false; }
-}
-function lineOff() { if (E && E.line) { try { E.line.disconnect(); } catch (e) { /* ignore */ } E.stream.getTracks().forEach(t => t.stop()); E.line = null; E.stream = null; } }
 
 /* ================= transport ================= */
 let wake = null;
@@ -645,14 +681,13 @@ function applyRate(snap) {   // the element's speed follows the target in small 
 const BUFENG = (() => { try { return location.hash.indexOf('nobuf') < 0 && localStorage.getItem('iridescent.buf') !== '0'; } catch (e) { return true; } })();
 const SPIN_MS = 520;   // a CD player: the disc spins up first, the sound starts when it is at speed; stopping cuts the sound at once (no pitch fall - that is for tapes), the disc keeps turning for a moment
 if (S.cdspin === undefined) S.cdspin = 1;
-const stayBuf = () => BUFENG && !!SCR.buf && S.src !== 1 && (!S.lock || wsolaOK());
+const stayBuf = () => BUFENG && !!SCR.buf && (!S.lock || wsolaOK());
 function engState(p) { if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
-const scrOK = () => S.scr && cur() && cur().buf && S.src !== 1;
+const scrOK = () => S.scr && cur() && cur().buf;
 const isPlaying = () => (SCR.active ? SCR.wasPlaying : !audio.paused);
 function rawPlay() { applyRate(true); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
 function doPlay() {
   initAudio(); if (ctx.state !== 'running') ctx.resume();
-  if (S.src === 1) { ui.msg('LINE IN'); return; }
   if (!cur()) { ui.openPicker(); return; }
   if (scrOK()) {
     if (!SCR.active && audio.paused) { scrBegin(true, 0); engState(true); }
@@ -781,7 +816,7 @@ function scrStart(dir) {
   s.start(0, clamp(off, 0, Math.max(0, s.buffer.duration - .01))); SCR.node = { s, g, dir };
 }
 function scrBegin(coast, r0) {
-  const t = cur(); if (!S.scr || !t || !t.buf || S.src === 1) return false;
+  const t = cur(); if (!S.scr || !t || !t.buf) return false;
   initAudio(); if (ctx.state !== 'running') ctx.resume(); scrInit();
   SCR.buf = t.buf; SCR.rev = null; SCR.pos = audio.currentTime || 0; SCR.rate = r0 || 0; SCR.restart = false; SCR.search = false; SCR.c = 0; SCR.spinUntil = 0; SCR.cd = false;
   SCR.wasPlaying = coast ? (r0 > 0) : !audio.paused; SCR.motor = SCR.wasPlaying ? baseRate() : 0; SCR.coast = !!coast; SCR.active = true;
@@ -1168,7 +1203,7 @@ async function computePeaks(t) {
     let mx = 0; for (let b = 0; b < n; b++) if (pk[b] > mx) mx = pk[b];
     for (let b = 0; b < n; b++) pk[b] = Math.pow(pk[b] / (mx || 1), .7);
     t.peaks = pk; if (!t.dur) t.dur = buf.duration;
-    if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && S.src !== 1 && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
+    if (cur() === t) { scrKeep(t, buf); if (t.buf && BUFENG && S.scr && !S.lock && !SCR.active && !audio.paused && !audio.seeking && ctx.state === 'running') { scrBegin(true, audio.playbackRate); SCR.wasPlaying = true; SCR.motor = clamp(baseRate() * nudge, .25, 4); engState(true); } }
     const cached = bpmStore()[t.key];
     if (cached) { t.bpm = cached[0]; t.off = cached[1]; t.bm = cached[2] | 0; }
     else { const an = analyzeBpm(buf); if (an) { t.bpm = an.bpm; t.off = an.off; t.bm = 0; t.conf = an.conf; bpmStore(t); } }
@@ -1270,7 +1305,6 @@ function makeDemo() {
 
 /* ================= persistent bits ================= */
 /* ================= UI: frame ================= */
-S.src = 0;
 [[12, 1050, 60], [474, 1050, -15]].forEach(c => el('screw', chassis, 'left:' + c[0] + 'px;top:' + c[1] + 'px;--r:' + c[2] + 'deg'));
 el('groove', chassis, 'top:88px'); el('groove', chassis, 'top:214px'); el('groove', chassis, 'top:656px');
 el('vline', chassis, 'left:292px;top:8px;height:74px');
@@ -1278,20 +1312,13 @@ const RED = '#b2432f';
 const pad2 = n => (n < 10 ? '0' : '') + n;
 
 /* ---- top band ---- */
-['SOURCE', 'RANGE'].forEach((n, i) => lab(n, [172, 252][i], 20, { cls: 'sm' }));
-const swSrc = mkSwitch(172, 50, 0, v => {
-  S.src = v;
-  if (v) { audio.pause(); lineOn().then(ok => { if (!ok) { S.src = 0; swSrc.classList.remove('on'); ui.msg('NO MIC ACCESS', 1800); } else ui.msg('LINE IN  USE PHONES', 2400); }); }
-  else { lineOff(); ui.msg('FILE'); }
-});
-lab('FILE  LINE', 172, 76, { cls: 'sm' });
-const swRange = mkSwitch(252, 50, S.range, v => { S.range = v; save(); applyRate(); ui.varChanged(); ui.msg('RANGE +/-' + (v ? 16 : 8) + '%'); });
-lab('8  16', 252, 76, { cls: 'sm' });
+lab('RANGE', 212, 20, { cls: 'sm' });
+const swRange = mkSwitch(212, 50, S.range, v => { S.range = v; save(); applyRate(); ui.varChanged(); ui.msg('RANGE +/-' + (v ? 16 : 8) + '%'); });
+lab('8  16', 212, 76, { cls: 'sm' });
 [['TAPE', 'fxTape', 332], ['FILTER', 'fxFilt', 394], ['COMP', 'fxComp', 456]].forEach(f => {
   lab(f[0], f[2], 20, { cls: 'sm' });
   mkSwitch(f[2], 50, S[f[1]], v => { S[f[1]] = v; save(); initAudio(); applyFx(); ui.msg(f[0] + (v ? ' ON' : ' OFF')); });
 });
-lab('LOOM FX', 394, 76, { cls: 'sm', c: RED });
 
 /* ---- dot-matrix display ---- */
 const COLS = 142, ROWS = 34, PITCH = 3, PAD_ = 6, DX = 31, DY = 104;
@@ -1381,7 +1408,6 @@ const JX = 232, JY = 434;
 lab('VARISPEED', 462, 254, { cls: 'lg' });
 S.vol = .7;   /* output level is fixed: no volume fader */
 const varLab = lab('+0.0%', 462, 620, { cls: 'lg', c: RED });
-lab('+', 462, 272, { cls: 'sm', s: 9 }); lab('-', 462, 602, { cls: 'sm', s: 9 });
 function mkFader(o) {
   const f = el('vfader', chassis, 'left:' + (o.x - 28) + 'px;top:' + (o.y - 28) + 'px;width:56px;height:' + (o.len + 56) + 'px');
   el('vslot', chassis, 'left:' + (o.x - 7) + 'px;top:' + (o.y - 8) + 'px;height:' + (o.len + 16) + 'px');
@@ -1431,7 +1457,6 @@ const cueLed = [], pdn = [];
       down: () => { const st = pdn[i] = { cleared: false }; st.to = setTimeout(() => { st.cleared = clearCue(i); }, 550); },
       up: (e, cancel) => { const st = pdn[i]; if (!st) return; clearTimeout(st.to); if (!cancel && !st.cleared) cuePad(i); } });
   }
-  lab('HOT CUES  -  TAP SET / JUMP  -  HOLD CLEAR', 250, 866, { cls: 'sm' });
   chassis = _c;
 }
 
@@ -1462,7 +1487,6 @@ const bPlay = mkBtn({ x: 194, y: TY, w: 112, h: TH, text: '', up: (e, c) => { if
 const hF = holdKey(1), bFf = mkBtn({ x: 314, y: TY, w: 70, h: TH, text: '', down: hF.down, up: hF.up }); icon(bFf, IC.ff);
 const bNext = mkBtn({ x: 392, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) next(); } }); icon(bNext, IC.next);
 const ledPlay = led(250, TY - 12, '');
-['PREV', 'REW', 'PLAY / PAUSE', 'FF', 'NEXT'].forEach((t, i) => lab(t, [73, 151, 250, 349, 427][i], TY + TH + 17, { cls: 'sm' }));
 chassis = _c0;
 
 /* ---- function row ---- */
@@ -1529,7 +1553,6 @@ let jgLong = false, jgTo = 0;
 const bScr = mkBtn({ x: 84, y: 34, w: 56, h: 36, cls: S.scr ? 'dark' : 'grey', text: 'JOG', id: 'scr', down: () => { jgLong = false; clearTimeout(jgTo); jgTo = setTimeout(() => { jgLong = true; S.dsk = S.dsk ? 0 : 1; save(); const t = cur(); cdrot.style.background = coverBg(t ? t.key : ''); ui.msg('DISC ' + (S.dsk ? 'WHITE' : 'COLOR')); }, 650); },
   up: (e, c) => { clearTimeout(jgTo); if (c || jgLong) return; S.jm = (S.jm + 1) % 3; S.scr = S.jm === 2 ? 0 : 1; save(); bScr.classList.toggle('dark', S.jm !== 2); bScr.classList.toggle('grey', S.jm === 2); ui.msg('JOG ' + JMN[S.jm]); } });
 const HELP = {
-  SOURCE: ['SOURCE', 'FILE PLAYS YOUR AUDIO FILES  LINE LISTENS TO THE INPUT  USE HEADPHONES'],
   RANGE: ['RANGE', 'VARISPEED RANGE  8 OR 16 PERCENT'],
   'sw:TAPE': ['TAPE FX', 'SWITCHES THE TAPE STAGE  WOW  FLUTTER  HISS  SOFT SATURATION'],
   'sw:FILTER': ['FILTER FX', 'SWITCHES THE FILTER STAGE ON OR OFF'],
@@ -1552,7 +1575,7 @@ const HELP = {
   MODE: ['PLAY MODE', 'NORMAL  REPEAT ONE  REPEAT ALL  SHUFFLE'],
   LOCK: ['PITCH LOCK', 'KEEPS THE PITCH WHEN THE SPEED CHANGES'],
   JUMP: ['BEAT JUMP', 'TAP JUMPS BY THE SHOWN NUMBER OF BEATS  HOLD TO CHANGE THE STEP  NEEDS A DETECTED BPM'],
-  LIB: ['LIBRARY', 'OPENS THE DISC SHELF  ADD FILES OR LOAD THE DEMO DISC'],
+  LIB: ['LIBRARY', 'OPENS THE DISC SHELF  ADD FILES OR LOAD THE DEMO DISC  HOLD TO SWITCH KEY CLICKS ON OR OFF'],
   'kn:BASS': ['BASS', 'LOW SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
   'kn:TREBLE': ['TREBLE', 'HIGH SHELF  PLUS OR MINUS 12 DB  DOUBLE TAP RESETS'],
   'kn:FILTER': ['FILTER', 'LEFT CLOSES THE HIGHS  RIGHT THINS THE LOWS  MIDDLE IS OPEN  DOUBLE TAP RESETS'],
@@ -1560,7 +1583,6 @@ const HELP = {
 };
 for (let i = 1; i <= 8; i++) HELP['pad' + i] = ['HOT CUE ' + i, 'TAP TO SET  TAP AGAIN TO JUMP HERE  HOLD TO CLEAR'];
 const HELP_RU = {
-  SOURCE: ['ИСТОЧНИК', 'FILE ИГРАЕТ ТВОИ ФАЙЛЫ  LINE СЛУШАЕТ ВХОД  ЛУЧШЕ В НАУШНИКАХ'],
   RANGE: ['ДИАПАЗОН', 'ДИАПАЗОН ВАРИСПИДА  8 ИЛИ 16 ПРОЦЕНТОВ'],
   'sw:TAPE': ['ЛЕНТА', 'ВКЛЮЧАЕТ ЛЕНТУ  ДЕТОНАЦИЯ  ФЛАТТЕР  ШУМ  МЯГКАЯ НАСЫЩЕННОСТЬ'],
   'sw:FILTER': ['ФИЛЬТР', 'ВКЛЮЧАЕТ ИЛИ ВЫКЛЮЧАЕТ ФИЛЬТР'],
@@ -1583,7 +1605,7 @@ const HELP_RU = {
   MODE: ['РЕЖИМ ИГРЫ', 'ОБЫЧНЫЙ  ПОВТОР ОДНОГО  ПОВТОР ВСЕХ  СЛУЧАЙНО'],
   LOCK: ['ФИКС ТОНА', 'СОХРАНЯЕТ ТОНАЛЬНОСТЬ ПРИ СМЕНЕ СКОРОСТИ'],
   JUMP: ['ПРЫЖОК ПО БИТАМ', 'ТАП ПРЫГАЕТ НА ПОКАЗАННОЕ ЧИСЛО БИТОВ  УДЕРЖИВАЙ ЧТОБЫ СМЕНИТЬ ШАГ  НУЖЕН BPM'],
-  LIB: ['БИБЛИОТЕКА', 'ОТКРЫВАЕТ ПОЛКУ ДИСКОВ  ДОБАВЬ ФАЙЛЫ ИЛИ ЗАГРУЗИ ДЕМО-ДИСК'],
+  LIB: ['БИБЛИОТЕКА', 'ОТКРЫВАЕТ ПОЛКУ ДИСКОВ  ДОБАВЬ ФАЙЛЫ ИЛИ ЗАГРУЗИ ДЕМО-ДИСК  УДЕРЖИВАЙ ЧТОБЫ ВКЛЮЧИТЬ ИЛИ ВЫКЛЮЧИТЬ ЗВУК КНОПОК'],
   'kn:BASS': ['БАС', 'НИЗКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   'kn:TREBLE': ['ВЧ', 'ВЫСОКИЙ ШЕЛФ  ПЛЮС МИНУС 12 ДБ  ДВОЙНОЙ ТАП СБРАСЫВАЕТ'],
   'kn:FILTER': ['ФИЛЬТР', 'ВЛЕВО ГЛУШИТ ВЫСОКИЕ  ВПРАВО УБИРАЕТ НИЗКИЕ  ЦЕНТР ОТКРЫТ  ДВОЙНОЙ ТАП СБРОС'],
@@ -1600,7 +1622,7 @@ function helpKey(t) {
     const tx = n.textContent.trim(); if (/^[1-8]$/.test(tx)) return 'pad' + tx; if (tx) return tx;
     return ({ 38: 'PREV', 116: 'REW', 194: 'PLAY', 314: 'FF', 392: 'NEXT' })[Math.round(parseFloat(n.style.left))] || null;
   }
-  if ((n = t.closest('.sw'))) { const k = ({ 172: 'SOURCE', 252: 'RANGE', 332: 'sw:TAPE', 394: 'sw:FILTER', 456: 'sw:COMP' })[Math.round(parseFloat(n.style.left))]; return k || null; }
+  if ((n = t.closest('.sw'))) { const k = ({ 212: 'RANGE', 332: 'sw:TAPE', 394: 'sw:FILTER', 456: 'sw:COMP' })[Math.round(parseFloat(n.style.left))]; return k || null; }
   if ((n = t.closest('.knob'))) return ({ 38: 'kn:BASS', 126: 'kn:TREBLE', 214: 'kn:FILTER', 302: 'kn:TAPE' })[Math.round(parseFloat(n.style.left))] || null;
   if ((n = t.closest('.vfader'))) return Math.round(parseFloat(n.style.left)) < 200 ? 'VOL' : 'VARI';
   if (t.closest('.cdisc')) return 'JOG';
@@ -1650,10 +1672,8 @@ let frostEl = null;
     }
   }
   const H = [1, 0], V = [0, 1];
-  ([[0, 96, 5, 4, [H]], [500, 130, 6, 4, [[-1, 0]]], [0, 262, 4, 4, [H]], [500, 276, 5, 4, [[-1, 0]]], [0, 650, 5, 4, [H]], [500, 656, 6, 4, [[-1, 0]]],
-   [120, 0, 4, 4, [V]], [390, 0, 4, 4, [V]], [70, 1070, 5, 4, [[0, -1]]], [440, 1070, 5, 4, [[0, -1]]], [250, 1070, 4, 4, [[0, -1]]],
-   [0, 860, 4, 4, [H]], [500, 868, 5, 4, [[-1, 0]]], [0, 972, 4, 4, [H]], [500, 966, 4, 4, [[-1, 0]]]]).forEach(b => bus.apply(null, b));
-  for (let i = 0; i < 46; i++) svg += '<circle cx="' + ri(8, 492) + '" cy="' + ri(8, 1062) + '" r="' + (rnd() < .3 ? 2.2 : 1.5) + '" fill="none" stroke="' + PAD + '" stroke-width="1"/>';
+  ([[0, 96, 4, 4, [H]], [500, 276, 4, 4, [[-1, 0]]], [0, 650, 4, 4, [H]], [390, 0, 3, 4, [V]], [250, 1070, 3, 4, [[0, -1]]], [500, 868, 4, 4, [[-1, 0]]]]).forEach(b => bus.apply(null, b));
+  for (let i = 0; i < 16; i++) svg += '<circle cx="' + ri(8, 492) + '" cy="' + ri(8, 1062) + '" r="' + (rnd() < .3 ? 2.2 : 1.5) + '" fill="none" stroke="' + PAD + '" stroke-width="1"/>';
   const tx = (x, y, t, r, sz) => { svg += '<text x="' + x + '" y="' + y + '" font-size="' + (sz || 6.2) + '" font-family="ui-monospace,Menlo,Consolas,monospace" letter-spacing=".6" fill="#4f5762"' + (r ? ' transform="rotate(' + r + ' ' + x + ' ' + y + ')"' : '') + '>' + t + '</text>'; };
   function chip(x, y, w, hh, n, ref) {
     // an IC footprint: body outline, pins on the long sides, pin-1 dot, reference
@@ -1667,10 +1687,8 @@ let frostEl = null;
     svg += '<circle cx="' + (x + 3.5) + '" cy="' + (y + 3.5) + '" r="1.5" fill="none" stroke="' + PAD + '" stroke-width="1"/>';
     tx(vert ? x + w + 7 : x, vert ? y + hh / 2 : y + hh + 11, ref, vert ? -90 : 0, 5.6);
   }
-  tx(8, 1040, 'IRIDESCENT  CD IR-01  REV A', -90, 6.6); tx(494, 250, 'J4  CN-FFC 16P', -90); tx(8, 250, 'TP1  TP2  TP3', -90);
-  tx(300, 252, 'R101  R102  C21  C22  L3', 0); tx(40, 958, 'U7 / U8   PWR-IN   GND', 0);
-  chip(11, 330, 16, 36, 8, 'U1'); chip(11, 566, 16, 56, 12, 'U2'); chip(473, 440, 16, 26, 6, 'U3'); chip(473, 770, 16, 46, 10, 'U4');
-  chip(396, 735, 40, 11, 10, 'U5'); chip(70, 735, 22, 11, 5, 'U6');
+  tx(8, 1040, 'IRIDESCENT  CD IR-01  REV A', -90, 6.6);
+  chip(11, 566, 16, 56, 12, 'U2'); chip(473, 770, 16, 46, 10, 'U4');
   const pcb = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   pcb.setAttribute('viewBox', '0 0 500 1070'); pcb.setAttribute('class', 'pcb'); pcb.innerHTML = svg;
   chassis.insertBefore(pcb, chassis.firstChild);
@@ -1701,7 +1719,6 @@ el('cdwell', chassis, 'left:' + (JX - 184) + 'px;top:' + (JY - 184) + 'px;width:
 const disc = el('cdisc', chassis, 'left:' + (JX - 168) + 'px;top:' + (JY - 168) + 'px;width:336px;height:336px');
 const cdrot = el('cdrot', disc); el('cdhole', disc);
 cdrot.insertAdjacentHTML('afterbegin', '<svg class="lbl" viewBox="0 0 288 288"></svg>'); lblEl = cdrot.querySelector('svg.lbl');
-lab('JOG', JX, JY + 212, { cls: 'sm' });
 let lastRing = -1;
 function setRing(frac) {
   const f = Math.round(clamp(frac, 0, 1) * 1000) / 1000;
@@ -1745,7 +1762,7 @@ const mt = { l: 0, r: 0, t: 0, clip: 0 }, mbuf = new Float32Array(512);
 function meterRead(now) {
   const dt = Math.min(200, now - (mt.t || now)); mt.t = now;
   let l = 0, r = 0;
-  if (E && E.aL && (!audio.paused || SCR.active || S.src === 1)) {
+  if (E && E.aL && (!audio.paused || SCR.active)) {
     const pk = a => { a.getFloatTimeDomainData(mbuf); let m = 0; for (let i = 0; i < mbuf.length; i++) { const v = Math.abs(mbuf[i]); if (v > m) m = v; } return m; };
     const pl = pk(E.aL), pr = pk(E.aR); if (Math.max(pl, pr) > .985) mt.clip = now + 700;
     const lv = p => clamp((20 * Math.log10(p + 1e-6) + 54) / 54, 0, 1); l = lv(pl); r = lv(pr);
@@ -1766,14 +1783,14 @@ function drawMeter(now) {
 function drawDisplay(now) { MCLIP = true; try { drawDisplay0(now); } finally { MCLIP = false; DOTC = null; } }
 function drawDisplay0(now) {
   dctx.clearRect(0, 0, cv.width, cv.height); dctx.drawImage(bg, 0, 0);
-  const t = cur(), line = S.src === 1, pos = curPos(), dur = (t && (t.dur || (isFinite(audio.duration) ? audio.duration : 0))) || 0;
-  text(line ? 'LINE' : t ? 'T' + pad2(Q.idx + 1) + '/' + pad2(Q.list.length) : 'EMPTY', 0, 0, .6);
+  const t = cur(), pos = curPos(), dur = (t && (t.dur || (isFinite(audio.duration) ? audio.duration : 0))) || 0;
+  text(t ? 'T' + pad2(Q.idx + 1) + '/' + pad2(Q.list.length) : 'EMPTY', 0, 0, .6);
   { const eb = effBpm(t); let bs = '';
-    if (!line && t) bs = eb ? eb.toFixed(1) + 'BPM' : (t.nopk ? '' : '---BPM');
+    if (t) bs = eb ? eb.toFixed(1) + 'BPM' : (t.nopk ? '' : '---BPM');
     if (bs) text(bs, 42, 0, eb ? 1 : .4);
     const fl = (S.sync ? ' S' : '') + (S.q ? ' Q' : ''); if (fl && eb) text(fl.trim(), 42 + width(bs) + 6, 0, 1); }
   const md = MODES[S.mode]; text(md, COLS - width(md), 0, S.mode ? 1 : .45);
-  text(line ? '--:--' : (S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos)), 0, 9, 1);
+  text(S.tmode && dur ? '-' + fmt(dur - pos) : fmt(pos), 0, 9, 1);
   const vr = (SCR.active ? SCR.rate - 1 : baseRate() * nudge - 1) * 100, vs = (vr >= -.05 ? '+' : '-') + Math.abs(vr).toFixed(1) + '%';
   text(vs, COLS - width(vs) - 12, 9, .9);
   drawMeter(now);
@@ -1784,7 +1801,6 @@ function drawDisplay0(now) {
     return;
   }
   if (msgText && now < msgUntil) text(msgText, 0, 17, 1);
-  else if (line) text('LIVE  USE PHONES', 0, 17, .85);
   else if (!t) text('NO DISC  TAP LIB', 0, 17, .85);
   else {
     if (!t.disp) t.disp = clean(t.name) || 'UNTITLED';
@@ -1810,7 +1826,10 @@ function drawDisplay0(now) {
     for (let r = y0; r <= base; r++) dot(1 + ph, r, 1);
   }
 }
-mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'ghost', text: 'LIB', id: 'lib', up: (e, c) => { if (!c) libOpen(); } });
+let lbLong = false, lbTo = 0;
+mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'ghost', text: 'LIB', id: 'lib',
+  down: () => { lbLong = false; clearTimeout(lbTo); lbTo = setTimeout(() => { lbLong = true; S.clk = S.clk ? 0 : 1; save(); ui.msg('CLICKS ' + (S.clk ? 'ON' : 'OFF'), 1400); uiSnd('key'); }, 650); },
+  up: (e, c) => { clearTimeout(lbTo); if (!c && !lbLong) libOpen(); } });
 /* ---- display tap: toggle time / seek on the waveform ---- */
 const hit = el('dmhit', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
 let wdrag = false;
@@ -1930,6 +1949,7 @@ let last = performance.now(), lastDraw = 0, uiBusyUntil = 0, dv = 0, ds = 0;
 const DISC_DPS = p => 2000 - 1200 * p;   // like a real CD: the platter turns faster near the hub and slows toward the rim (about 330 to 130 rpm here)
 function step(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
+  { const ip = !!isPlaying(); if (ip !== hissOn) { hissOn = ip; applyFxSoon(); } }
   const playing = isPlaying();
   if (loop.on && loop.b != null && playing && curPos() >= loop.b - .02) seek(loop.a);
   if (SCR.active && playing) savePos(false);
@@ -2043,7 +2063,144 @@ function drawIcon(S) {
   return c;
 }
 
+
+/* ================= live disc: the gloss band follows the tilt of the phone ================= */
+{
+  const st = { on: 0, asked: 0, g0: null, b0: null, x: 0, y: 0, tx: 0, ty: 0, raf: 0 };
+  const apply = () => {
+    st.raf = 0; st.x += (st.tx - st.x) * .18; st.y += (st.ty - st.y) * .18;
+    disc.style.setProperty('--gp', (41 + st.x).toFixed(1) + '%'); disc.style.setProperty('--ga', (122 + st.y).toFixed(1) + 'deg');
+    if (Math.abs(st.tx - st.x) > .05 || Math.abs(st.ty - st.y) > .05) st.raf = requestAnimationFrame(apply);
+  };
+  const onOri = e => {
+    if (e.gamma == null || e.beta == null) return;
+    if (st.g0 == null) { st.g0 = e.gamma; st.b0 = e.beta; }
+    st.g0 += (e.gamma - st.g0) * .008; st.b0 += (e.beta - st.b0) * .008;   // the neutral position drifts to however the phone is held
+    let dx = e.gamma - st.g0, dy = e.beta - st.b0;
+    const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    if (Math.abs(a) === 90) { const t = dx; dx = a === 90 ? dy : -dy; dy = a === 90 ? -t : t; }
+    st.tx = Math.max(-30, Math.min(30, dx * 1.2)); st.ty = Math.max(-30, Math.min(30, dy * .9));
+    if (!st.raf) st.raf = requestAnimationFrame(apply);
+  };
+  const enable = () => { if (st.on) return; st.on = 1; window.addEventListener('deviceorientation', onOri, true); };
+  const D = window.DeviceOrientationEvent, needAsk = !!(D && typeof D.requestPermission === 'function');
+  const ask = () => {
+    if (st.on || st.asked || !needAsk) return; st.asked = 1;   // iOS wants a tap first
+    D.requestPermission().then(r => { if (r === 'granted') { enable(); ui.msg('TILT GLARE ON', 1400); } }).catch(() => { });
+  };
+  if (!needAsk && D) enable();
+  disc.addEventListener('pointerup', ask, true); disc.addEventListener('click', ask, true);
+  window.__tilt = onOri;
+}
 /* ================= boot ================= */
+/* ================= landscape (phones): a viewing mode ================= */
+const LOLED_REST = 0, LAND_HIDE_MS = 3500;   // display opacity at rest, bar timeout
+const land = { on: false, ph: [], mode: 0, to: 0, st: [], down: null };
+const landEl = document.createElement('div'); landEl.id = 'land'; document.body.appendChild(landEl);
+const lDisc = el('', landEl, 'position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0');
+const lOled = el('', landEl, 'position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;opacity:0;pointer-events:none;transition:opacity .45s ease');
+const mk = (cls, txt) => { const d = document.createElement('div'); d.className = cls; if (txt != null) d.textContent = txt; return d; };
+const lBar = mk(''); lBar.id = 'lbar'; landEl.appendChild(lBar);
+const lHint = mk(''); lHint.id = 'lhint'; landEl.appendChild(lHint);
+const lCtx = mk('lr'), lMain = mk('lr'); lBar.appendChild(lMain);
+let fid = 700;
+/* a landscape key presses the real key: the same pointer events, so every behaviour (hold, long press, clicks) stays where it was */
+function lkey(label, tgt, o) {
+  o = o || {};
+  const b = mk('lk' + (o.cls ? ' ' + o.cls : ''), label), id = ++fid; let on = false;
+  const fire = (type, e) => tgt.dispatchEvent(new PointerEvent(type, { pointerId: id, bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY }));
+  b.addEventListener('pointerdown', e => { e.preventDefault(); if (on) return; on = true; b.classList.add('down'); landPoke(); fire('pointerdown', e); if (o.once) { on = false; setTimeout(() => b.classList.remove('down'), 90); landState(); } });
+  const up = e => { if (!on) return; on = false; b.classList.remove('down'); fire(e.type === 'pointercancel' ? 'pointercancel' : 'pointerup', e); landPoke(); landState(); };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  if (o.st) land.st.push([b, o.st]);
+  return b;
+}
+const fnBtn = t => [...PGS[1].querySelectorAll('.btn')].find(b => b.textContent === t);
+const padBtn = i => [...PGS[0].querySelectorAll('.btn')].find(b => b.textContent === String(i + 1));
+const swAll = () => document.querySelectorAll('.sw');
+const libBtn = document.querySelector('.btn[data-id="lib"]');
+const lLib = lkey('LIB', libBtn, { cls: '' }); lLib.id = 'llib'; landEl.appendChild(lLib);
+function landCtx() {
+  land.st = land.st.filter(x => x[0].id === 'llib');
+  lMain.textContent = '';
+  const ic = (btn, tgt, w) => { const k = lkey('', tgt); if (w) k.style.minWidth = w + 'px'; k.innerHTML = btn.innerHTML; return k; };
+  lMain.appendChild(ic(bRew, bRew)); const pl = ic(bPlay, bPlay, 104); pl.dataset.play = 1; lMain.appendChild(pl); lMain.appendChild(ic(bFf, bFf));
+  lMain.appendChild(mk('sep'));
+  lMain.appendChild(lkey('CUE', fnBtn('CUE')));
+  /* FX: tape + filter on or all off, in one key */
+  const sw = swAll(), fxOn = () => [1, 2, 3].some(i => sw[i].classList.contains('on'));
+  const fk = lkey('FX', document.createElement('div'), { once: 1, st: fxOn });
+  fk.addEventListener('pointerdown', () => { const on = fxOn(); [1, 2, 3].forEach(i => { if (sw[i].classList.contains('on') !== (!on && i < 3)) sw[i].dispatchEvent(new PointerEvent('pointerdown', { pointerId: 900 + i, bubbles: true, cancelable: true })); }); landState(); });
+  lMain.appendChild(fk);
+  lMain.appendChild(lkey('LOOP', fnBtn('LOOP'), { st: () => loop && loop.on }));
+  landState();
+}
+function landState() { land.st.forEach(x => x[0].classList.toggle('on', !!x[1]())); const p = lMain.querySelector('[data-play]'); if (p) p.innerHTML = bPlay.innerHTML; }
+function landShow(on) {
+  lBar.classList.toggle('show', on); lLib.classList.toggle('show', on); lHint.classList.toggle('hide', on);
+  lOled.style.opacity = on ? 1 : LOLED_REST; lOled.style.pointerEvents = on ? '' : 'none';   // at rest the display stays faintly lit
+}
+function landPoke() { if (!land.on) return; landShow(true); landState(); clearTimeout(land.to); land.to = setTimeout(() => landShow(false), LAND_HIDE_MS); }
+/* a quick tap anywhere (also on the disc) wakes the bar; a scratch does not */
+landEl.addEventListener('pointerdown', e => { land.down = { t: e.timeStamp, x: e.clientX, y: e.clientY }; if (lBar.contains(e.target)) landPoke(); }, true);
+landEl.addEventListener('pointerup', e => { const d = land.down; land.down = null; if (d && e.timeStamp - d.t < 300 && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 10) landPoke(); }, true);
+
+/* the board shows through here too, a little: traces and a few chips at the two sides, clear of the disc, display and bar */
+const lPcb = document.createElementNS(NS, 'svg'); lPcb.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;opacity:.26'; landEl.insertBefore(lPcb, landEl.firstChild);
+/* plastic / glass over the board */
+const lFrost = mk(''); lFrost.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.04) 38%,rgba(255,255,255,.16) 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),inset 0 0 50px rgba(255,255,255,.3)'; landEl.insertBefore(lFrost, lPcb.nextSibling);
+function landPcb(vw, vh, sl, sr, cx, sd) {
+  let seed = 505; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296, ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const TR = '#59616c', PD = '#4f5762', R = 184 * sd + 14, fl = cx - R - sl, fr = vw - sr - cx - R;   // room each side of the disc well
+  if (fl < 50 && fr < 50) { lPcb.textContent = ''; return; }
+  let o = '';
+  const bus = (x, y, dir, n, len) => {
+    // a bundle: straight, a 45 degree jog, straight again
+    const l1 = len * .55, j = ri(14, 24), l2 = len - l1 - j, up = rnd() < .5 ? -1 : 1, pts = [[0, 0], [l1, 0], [l1 + j, up * j], [l1 + j + l2, up * j]];
+    for (let k = 0; k < n; k++) {
+      const off = (k - (n - 1) / 2) * 4.4, d = pts.map(q => [x + dir * q[0], y + q[1] + off]);
+      o += '<path d="M' + d.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join('L') + '" fill="none" stroke="' + TR + '" stroke-width="1.2" stroke-linejoin="round"/>';
+      const e = d[d.length - 1]; o += '<circle cx="' + e[0].toFixed(1) + '" cy="' + e[1].toFixed(1) + '" r="2" fill="none" stroke="' + PD + '" stroke-width="1"/>';
+      if (rnd() < .5) o += '<circle cx="' + d[0][0].toFixed(1) + '" cy="' + d[0][1].toFixed(1) + '" r="1.5" fill="' + PD + '"/>';
+    }
+  };
+  const chip = (x, y, w, h, n, ref) => {
+    o += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1.5" fill="none" stroke="' + TR + '" stroke-width="1.1"/>';
+    const pitch = h / n; for (let i = 0; i < n; i++) { const q = y + (i + .5) * pitch; o += '<path d="M' + (x - 4) + ' ' + q + 'h4M' + (x + w) + ' ' + q + 'h4" stroke="' + PD + '" stroke-width="1.2"/>'; }
+    o += '<circle cx="' + (x + 3.2) + '" cy="' + (y + 3.2) + '" r="1.3" fill="none" stroke="' + PD + '" stroke-width=".9"/>';
+    o += '<text x="' + (x + w + 8) + '" y="' + (y + h / 2) + '" font-size="5.4" font-family="ui-monospace,Menlo,monospace" letter-spacing=".6" fill="' + PD + '" transform="rotate(-90 ' + (x + w + 8) + ' ' + (y + h / 2) + ')" text-anchor="middle">' + ref + '</text>';
+  };
+  const LL = Math.min(fl * .85, 190), LR = Math.min(fr * .85, 190);
+  if (fl >= 50) { bus(sl, vh * .34, 1, 4, LL); bus(sl, vh * .6, 1, 5, LL * .9); bus(sl, vh * .84, 1, 3, LL * .7); if (fl >= 70) chip(sl + 14, vh * .46, 14, 34, 8, 'U1'); }
+  if (fr >= 50) { bus(vw - sr, vh * .42, -1, 5, LR); bus(vw - sr, vh * .68, -1, 4, LR * .85); bus(vw - sr, vh * .9, -1, 3, LR * .6); if (fr >= 70) chip(vw - sr - 28, vh * .52, 14, 44, 10, 'U2'); }
+  for (let i = 0; i < 14; i++) { const left = rnd() < .5, w = left ? fl : fr; if (w < 50) continue; const x = left ? ri(sl + 8, sl + w) : ri(vw - sr - w, vw - sr - 8); o += '<circle cx="' + x + '" cy="' + ri(10, vh - 10) + '" r="' + (rnd() < .3 ? 2 : 1.4) + '" fill="none" stroke="' + PD + '" stroke-width="1"/>'; }
+  o += '<text x="' + (sl + 16) + '" y="' + (vh - 12) + '" font-size="5.8" font-family="ui-monospace,Menlo,monospace" letter-spacing=".6" fill="' + PD + '">IRIDESCENT  CD IR-01  REV A</text>';
+  lPcb.setAttribute('viewBox', '0 0 ' + vw + ' ' + vh); lPcb.innerHTML = o;
+}
+function landLayout() {
+  const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(saProbe);
+  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0, st = parseFloat(cs.paddingTop) || 0;
+  const sd = vh * 1.2 / 368, cx = vw * .45;   // bigger disc, a little left of centre so the display keeps its corner
+  lDisc.style.transform = 'translate(' + (cx - JX * sd) + 'px,' + (vh / 2 - JY * sd) + 'px) scale(' + sd + ')';
+  const w = Math.min((vw - sl - sr) * .25, 250), so = w / (DW * DSC), x = vw - sr - 22 - w, y = st + 20;
+  lOled.style.transform = 'translate(' + (x - DXC * so) + 'px,' + (y - DY * so) + 'px) scale(' + so + ')';
+  lLib.style.left = (sl + 22) + 'px'; lLib.style.top = (st + 20) + 'px';
+  landPcb(vw, vh, sl, sr, cx, sd);
+}
+const lmv = (node, to) => { const ph = document.createComment(''); node.parentNode.insertBefore(ph, node); to.appendChild(node); land.ph.push([node, ph]); };
+function landSync() {
+  const vw = window.innerWidth, vh = window.innerHeight, want = vh < 520 && vw > vh * 1.25;
+  if (want && !land.on) {
+    land.on = true; document.documentElement.classList.add('land');
+    [ringSvg, document.querySelector('.cdwell'), disc, hub].forEach(n => lmv(n, lDisc)); [bz, hit].forEach(n => lmv(n, lOled)); lmv(libEl, landEl);
+    landCtx(); landPoke();
+  } else if (!want && land.on) {
+    land.on = false; clearTimeout(land.to); document.documentElement.classList.remove('land');
+    land.ph.forEach(x => { x[1].parentNode.insertBefore(x[0], x[1]); x[1].remove(); }); land.ph = [];
+  }
+  if (land.on) landLayout();
+}
+const _playState = ui.playState; ui.playState = p => { _playState(p); if (land.on) landState(); };
 fit();
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', () => setTimeout(fit, 120));

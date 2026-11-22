@@ -25,6 +25,10 @@ The top of the deck holds the display with the LIB button, the jog disc with its
 
 ![Pages](screens/pages.jpg)
 
+Landscape on a phone is a viewing mode: a big disc, the display in the corner and a frosted bar that fades away after a few seconds (tap the screen to bring it back).
+
+<img src="screens/landscape.jpg" width="640" alt="Landscape">
+
 A disc with its printed label (banner layout, edited in LIBRARY → LABEL):
 
 <img src="screens/label.jpg" width="300" alt="Disc label">
@@ -38,6 +42,9 @@ Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous.
 - **The disc**: it turns at a CD's speed (fast near the hub, slowing toward the rim as the track plays), translucent so the board shows through. Hold JOG to flip it between COLOR (a hue per disc) and WHITE. Grab it with a finger to hold it still, move it both ways to scratch, let go and it spins back up.
 - **Disc label**: every disc gets a printed face generated from the file (title and artist from the file name, real length, format and size) in one of eight layouts (classic, banner, technical, dotted, ruled card, corner block, stripe, handwritten mixtape) or left blank with just a fine rim line. Open LIBRARY → LABEL to edit two lines and a handwritten note, pick a layout (AUTO picks one per disc) or reset. Labels are stored on the device. No brand names or logos.
 - **Beat jump**: on page 2 the BEAT JUMP button jumps the playhead by the shown number of beats (+1, +4, +8, +16 or back −1 … −16). Hold it to change the step. Needs a detected BPM.
+- **Landscape (phones)**: a viewing mode. The disc fills the middle, the display sits top right. Tap the screen and a frosted bar slides up with REW / PLAY / FF and CUE / FX / LOOP (FX switches tape + filter on or off together). Bar, display and LIB fade away after 3 seconds. Pads, knobs and VARISPEED are in portrait only.
+- **Live disc**: the gloss band on the disc follows the tilt of the phone. On iPhone, tap the disc once after launch and allow motion access. Without a tap (or if denied) the gloss just stays put.
+- **Key clicks**: off by default. Hold LIB to switch on very soft, dull silicone-style taps on keys, pads and switches (no sound on knobs). They go straight to the output, not through the player's effects.
 - **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG modes VINYL / CDJ (rim bends the speed).
 - **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display. **SYNC** locks the deck to the master tempo via varispeed (8/16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
 - **CD behaviour**: PLAY spins the disc up first (about half a second), then the sound starts at full speed; PAUSE cuts the sound at once with no pitch fall (that is for tapes) while the disc spins down. Scratching keeps its vinyl feel.
@@ -49,8 +56,7 @@ Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous.
 - **Varispeed** fader, range 8 or 16 percent, with **LOCK** to keep pitch. Output level is fixed (there is no volume fader); the phone's own volume sets loudness.
 - **Level meter**: two L/R LED columns on the display, read after the limiter, with red clip segments; useful with TAPE and COMP.
 - **LOOM FX**: TAPE (wow, flutter, hiss, saturation), FILTER (one knob: low-pass to the left, high-pass to the right, open in the middle), COMP, plus BASS and TREBLE.
-- **LINE IN** from the device input, with echo cancellation and noise suppression off.
-- **Phone in landscape**: no separate layout by design; the player keeps its portrait panel and shows a small rotate hint. The installed app (home-screen icon) is locked to portrait.
+- **Phone in landscape**: switches to the viewing mode above automatically (also in the installed app).
 - **Waveform** on the display and a thin progress ring around the disc that also shows your cue points and the loop.
 - **Resume**: remembers the position of each file; load it again and it picks up where you left it.
 - **Disc cover**: every disc gets its own iridescent colors, derived from the file.
@@ -62,7 +68,7 @@ Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous.
 
 ## Use
 
-Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and others the browser can decode). On iPhone, add it to the home screen: it opens full-screen as an app (`manifest.webmanifest`) and stays in portrait.
+Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and others the browser can decode). On iPhone, add it to the home screen: it opens full-screen as an app (`manifest.webmanifest`) and rotates like any app (portrait is the full panel, landscape is the viewing mode).
 
 For offline use and installation, host the folder (for example on GitHub Pages) so `manifest.webmanifest` and `sw.js` are served. Opened as a plain file it still works, without the offline cache.
 
