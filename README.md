@@ -38,13 +38,15 @@ All eight label styles (A–H) plus a blank disc; each disc gets its own colour,
 
 <img src="screens/discs.jpg" width="560" alt="Disc label styles">
 
+<img src="screens/white.jpg" width="300" alt="White disc">
+
 In the app, press HELP and tap any control: the dot-matrix display names it and scrolls what it does.
 
 Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous. The mouse wheel over the disc scrubs or bends.
 
 ## Features
 
-- **The disc**: it turns at a CD's speed (fast near the hub, slowing toward the rim as the track plays), translucent so the board shows through. Hold JOG to flip it between COLOR (a hue per disc) and WHITE. Grab it with a finger to hold it still, move it both ways to scratch, let go and it spins back up. The rainbow sheen on top of it stays put against the light, drifts with the spin and follows your finger; IRIS switches it on or off.
+- **The disc**: it turns at a CD's speed (fast near the hub, slowing toward the rim as the track plays), translucent so the board shows through. Hold JOG to flip it between COLOR (a hue per disc) and WHITE. Grab it with a finger to hold it still, move it both ways to scratch, let go and it spins back up. The rainbow sheen on top of it stays put against the light, drifts with the spin and follows your finger; IRIS switches it on or off. It is drawn on the clear (COLOR) disc only; the WHITE disc has nothing to refract. The clear disc also shows the drive beneath it: a moulded deck with recessed wells for the motor and the pivot, and a slider in a curved slot that travels from the hub to the rim as the track plays.
 - **Disc label**: every disc gets a printed face generated from the file (title and artist from the file name, real length, format and size) in one of eight layouts (classic, banner, technical, dotted, ruled card, rings, stripe, handwritten mixtape) plus ART, which puts the cover embedded in the file on the disc (never picked by AUTO) or left blank with just a fine rim line. Open LIBRARY → LABEL to edit two lines and a handwritten note, pick a layout (AUTO picks one per disc) or reset. Labels are stored on the device. No brand names or logos.
 - **Beat jump**: on page 2 the BEAT JUMP button jumps the playhead by the shown number of beats (+1, +4, +8, +16 or back −1 … −16). Hold it to change the step. Needs a detected BPM.
 - **Landscape (phones)**: a viewing mode. The disc fills the middle, the display sits top right. Tap the screen and a frosted bar slides up with REW / PLAY / FF and CUE / FX / LOOP (FX switches crush + filter on or off together). Bar, display and LIB fade away after 3 seconds. Pads, knobs and VARISPEED are in portrait only.

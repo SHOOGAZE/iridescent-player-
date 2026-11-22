@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.21
+- Screens refreshed; new screen with the white disc.
+
+## 1.0.20
+- The red line on the VARISPEED fader cap is removed.
+
+## 1.0.19
+- The red mark on the drive slider and the red stripe on the deck are removed.
+
+## 1.0.18
+- Recorded drive sounds from your samples: disc drop and spin-up, eject of the previous disc, spin-up on PLAY, a quiet drive hum while playing, and sampled key/switch clicks. All gated by the CLICKS toggle (long press LIB). The synthesised sounds stay as a fallback until the clips are decoded.
+- Clips are short mono mp3 (about 45 KB in total) embedded in index.html. Sources: freesound_community / audiopapkin (Pixabay).
+
+## 1.0.17
+
+- The drive under the clear disc is now a moulded deck instead of drawn parts: recessed wells for the spindle motor and the pivot, and a curved slot in which a small slider travels from the hub to the rim as the disc plays (it follows scratching and search). The swing arm of 1.0.16 is gone.
+
+## 1.0.16
+
+- The drive under the clear disc: a thin line-art plate (scale, screws, spindle motor) and a swing-arm pickup with an orange flex cable. The arm swings from the hub to the rim as the disc plays, and follows scratching and search. Hidden on the WHITE disc. Compositor-only motion.
+
+## 1.0.15
+
+- The rainbow sheen is only drawn on the clear (COLOR) disc. On the WHITE disc it hides itself; the IRIS switch keeps its setting and the sheen returns when you flip the disc back.
+
 ## 1.0.14
 
 - Label editor: a bigger disc (340 px in portrait, 290 px in landscape) and the whole layout sits in the middle of the screen instead of hugging the top. In landscape the fields and styles are two columns next to the disc.
