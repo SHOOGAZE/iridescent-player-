@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.25
+- Cue pads and key release no longer click (it was lost under the music). Keys, switches, disc and drive sounds stay.
+
 ## 1.0.24
 - The old synthesised UI and disc sounds are removed; everything now plays from the recorded clips (pads and key release use the same click at other pitches). The clips are decoded as soon as audio starts.
 

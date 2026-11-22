@@ -496,8 +496,7 @@ function uiSnd(kind, tone) {
   try {
     initAudio(); if (!ctx) return; if (ctx.state !== 'running') ctx.resume(); smpInit();
     if (kind === 'key') smp('click', .5, .95 + Math.random() * .1, 0);
-    else if (kind === 'pad') smp('click', .45, .8 * Math.pow(2, ((tone | 0) % 8) / 12 * 1.5), 0);
-    else if (kind === 'rel') smp('click', .12, 1.6, 0);
+    /* pads and key release stay silent: a click is lost under the music anyway */
     else if (kind === 'sw') { smp('click', .7, 1.25, 0); smp('click', .4, 1.5, .03); }
   } catch (e) { /* ignore */ }
 }
