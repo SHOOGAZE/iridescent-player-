@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -517,6 +517,7 @@ function mkBtn(o) {
   if (!o.cls || !/\bdark\b/.test(o.cls)) slot.style.background = 'rgba(205,209,214,.25)';   // light keys are frosted: the board shows through the recess
   const b = el('btn' + (o.cls ? ' ' + o.cls : ''), chassis, '', o.text || '');
   if (o.id) b.dataset.id = o.id;
+  b.setAttribute('role', 'button'); if (o.text) b.setAttribute('aria-label', o.cls && /\bpad\b/.test(o.cls) ? 'Cue pad ' + o.text : o.text);
   rect(b, o.x, o.y, o.w, o.h);
   let pid = null;
   b.addEventListener('pointerdown', e => {
@@ -538,10 +539,10 @@ function mkBtn(o) {
   b.addEventListener('pointercancel', up);
   return b;
 }
-function mkSwitch(x, y, on, onChange) {
-  const s = el('sw' + (on ? ' on' : ''), chassis, 'left:' + x + 'px;top:' + y + 'px');
+function mkSwitch(x, y, on, onChange, label) {
+  const s = el('sw' + (on ? ' on' : ''), chassis, 'left:' + x + 'px;top:' + y + 'px'); s.setAttribute('role', 'switch'); s.setAttribute('aria-checked', on ? 'true' : 'false'); if (label) s.setAttribute('aria-label', label);
   el('slot2', s); el('tab', s);
-  s.addEventListener('pointerdown', e => { e.preventDefault(); uiSnd('sw'); s.classList.toggle('on'); onChange(s.classList.contains('on') ? 1 : 0); });
+  s.addEventListener('pointerdown', e => { e.preventDefault(); uiSnd('sw'); s.classList.toggle('on'); s.setAttribute('aria-checked', s.classList.contains('on') ? 'true' : 'false'); onChange(s.classList.contains('on') ? 1 : 0); });
   return s;
 }
 
@@ -1081,7 +1082,7 @@ audio.addEventListener('ended', () => {
 audio.addEventListener('play', () => { wakeOn(); ui.playState(true); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; });
 audio.addEventListener('pause', () => { if (SCR.active && SCR.wasPlaying) return; wakeOff(); ui.playState(false); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; });
 audio.addEventListener('loadedmetadata', () => { const t = cur(); if (t) { t.dur = audio.duration; ui.trackChanged(true); drawLabel(t); } });
-audio.addEventListener('error', () => { ui.msg('CANT READ FILE', 2000); });
+audio.addEventListener('error', () => { const t = cur(); ui.msg('CANT READ ' + (t && t.name ? String(t.name).slice(0, 24).toUpperCase() : 'FILE'), 6000); });
 
 /* ================= queue / cues ================= */
 const keyOf = f => f.name + '|' + f.size;
@@ -1584,7 +1585,7 @@ const pad2 = n => (n < 10 ? '0' : '') + n;
 /* ---- top band ---- */
 [['CRUSH', 'fxCrush', 375], ['FILTER', 'fxFilt', 437]].forEach(f => {
   lab(f[0], f[2], 20, { cls: 'sm' });
-  mkSwitch(f[2], 50, S[f[1]], v => { S[f[1]] = v; save(); initAudio(); applyFx(); ui.msg(f[0] + (v ? ' ON' : ' OFF')); });
+  mkSwitch(f[2], 50, S[f[1]], v => { S[f[1]] = v; save(); initAudio(); applyFx(); ui.msg(f[0] + (v ? ' ON' : ' OFF')); }, f[0]);
 });
 
 
@@ -1593,6 +1594,7 @@ lab('AUTOMIX', 246, 20, { cls: 'sm' });
 const mixLeds = [4, 8, 16].map((v, i) => led(222 + i * 24, 51, ''));
 [4, 8, 16].forEach((v, i) => lab(String(v), 222 + i * 24, 74, { cls: 'sm' }));
 const mixHit = el('mixhit', chassis, 'left:202px;top:8px;width:88px;height:84px;position:absolute;cursor:pointer;touch-action:none');
+mixHit.setAttribute('role', 'button'); mixHit.setAttribute('aria-label', 'Automix length');
 mixHit.addEventListener('pointerdown', e => { e.preventDefault(); const L = [0, 4, 8, 16]; S.mix = L[(L.indexOf(S.mix) + 1) % 4]; save(); uiSnd('key'); mixSync(); ui.msg(S.mix ? 'AUTOMIX ' + S.mix + 'S' : 'AUTOMIX OFF', 1500); });
 function mixSync() { mixLeds.forEach((l, i) => { const on = S.mix === [4, 8, 16][i]; l.classList.toggle('on', on); l.classList.toggle('cur', on && !!MIX); }); }
 setInterval(mixSync, 250); mixSync();
@@ -1695,7 +1697,8 @@ function mkFader(o) {
   }
   const tab = el('vtab', f, ''); if (o.x < 200) tab.appendChild(document.createElement('i'));   // the red index stays on the volume fader only
   let v = o.value;
-  const render = () => { tab.style.top = ((1 - v) * o.len) + 'px'; };
+  f.setAttribute('role', 'slider'); f.setAttribute('aria-label', o.label || 'Varispeed'); f.setAttribute('aria-valuemin', '-16'); f.setAttribute('aria-valuemax', '16'); f.setAttribute('aria-orientation', 'vertical');
+  const render = () => { tab.style.top = ((1 - v) * o.len) + 'px'; f.setAttribute('aria-valuenow', String(Math.round((v - .5) * 32))); };
   render();
   let drag = null, lastTap = 0;
   f.addEventListener('pointerdown', e => {
@@ -1771,14 +1774,14 @@ function holdKey(dir) {
 const _c0 = chassis; chassis = pageLayer(0);
 grp('TRANSPORT', 43, 457, 868);
 const TY = 898, TH = 84;
-const bPrev = mkBtn({ x: 38, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) prev(); } }); icon(bPrev, IC.prev);
-const hR = holdKey(-1), bRew = mkBtn({ x: 116, y: TY, w: 70, h: TH, text: '', down: hR.down, up: hR.up }); icon(bRew, IC.rew);
+const bPrev = mkBtn({ x: 38, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) prev(); } }); bPrev.setAttribute('aria-label', 'Previous'); icon(bPrev, IC.prev);
+const hR = holdKey(-1), bRew = mkBtn({ x: 116, y: TY, w: 70, h: TH, text: '', down: hR.down, up: hR.up }); bRew.setAttribute('aria-label', 'Rewind'); icon(bRew, IC.rew);
 let plTo = 0, plLong = false;
 const bPlay = mkBtn({ x: 194, y: TY, w: 112, h: TH, text: '',
   down: () => { plLong = false; clearTimeout(plTo); plTo = setTimeout(() => { plLong = true; if (isPlaying()) doPause(); seek(0); ui.msg('STOP'); }, 650); },
-  up: (e, c) => { clearTimeout(plTo); if (c || plLong) return; togglePlay(); } }); icon(bPlay, IC.play);
-const hF = holdKey(1), bFf = mkBtn({ x: 314, y: TY, w: 70, h: TH, text: '', down: hF.down, up: hF.up }); icon(bFf, IC.ff);
-const bNext = mkBtn({ x: 392, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) next(); } }); icon(bNext, IC.next);
+  up: (e, c) => { clearTimeout(plTo); if (c || plLong) return; togglePlay(); } }); bPlay.setAttribute('aria-label', 'Play / pause'); icon(bPlay, IC.play);
+const hF = holdKey(1), bFf = mkBtn({ x: 314, y: TY, w: 70, h: TH, text: '', down: hF.down, up: hF.up }); bFf.setAttribute('aria-label', 'Fast forward'); icon(bFf, IC.ff);
+const bNext = mkBtn({ x: 392, y: TY, w: 70, h: TH, text: '', up: (e, c) => { if (!c) next(); } }); bNext.setAttribute('aria-label', 'Next'); icon(bNext, IC.next);
 const ledPlay = led(250, TY - 12, '');
 chassis = _c0;
 
@@ -2159,6 +2162,7 @@ mkBtn({ x: 401, y: 104, w: 73, h: 94, cls: 'ghost', text: 'LIB', id: 'lib',
   up: (e, c) => { clearTimeout(lbTo); if (!c && !lbLong) libOpen(); } });
 /* ---- display tap: toggle time / seek on the waveform ---- */
 const hit = el('dmhit', chassis, 'transform-origin:0 0;transform:scale(' + DSC + ');left:' + DXC + 'px;top:' + DY + 'px;width:' + (COLS * PITCH + PAD_ * 2) + 'px;height:' + (ROWS * PITCH + PAD_ * 2) + 'px');
+hit.setAttribute('role', 'button'); hit.setAttribute('aria-label', 'Display: tap to switch time, drag the lower part to seek');
 let wdrag = false, bpmTo = 0, bpmLong = false, bpmDn = false, taps = [], lastTap = 0;
 function tapTempo() {   // tap the BPM on the display along with the music: 4 taps set tempo and grid; hold it to flip x2 / half
   const t = cur(); if (!t) return;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.22
+- Accessibility: roles and labels on buttons, pads, transport, switches (CRUSH, FILTER), the VARISPEED slider and the display.
+- Page zoom allowed again (`user-scalable=no` removed; the player itself still ignores touch gestures).
+- Manifest: 192 px and maskable 512 px icons added.
+- Read errors name the file and stay for 6 seconds.
+
 ## 1.0.21
 - Screens refreshed; new screen with the white disc.
 
