@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.35
+- FF / REW now whirr like a drive searching; the pitch climbs while the button is held.
+- New spin-up on PLAY, new disc loading sound (tray closing with a thud), and a case open / close sound for the library.
+
+## 1.0.34
+- Disc loading uses the new eject sound played backwards again (soft, no latch click at the end).
+
 ## 1.0.33
 - Disc loading is back on the original insert sound; the new eject and the new clicks stay.
 
