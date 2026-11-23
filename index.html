@@ -963,15 +963,17 @@ function scanSnd(on, dir) {   // FF / REW: the drive whirrs while the head runs;
     }
   } catch (e) { /* ignore */ }
 }
+let humTo = 0;
 function motor(on) {   // a quiet drive hum while a disc plays
   try {
     if (!ctx || !smpBuf.hum) return;
     if (on && S.clk) {
       if (humSrc) return;
       humSrc = ctx.createBufferSource(); humGain = ctx.createGain(); humSrc.buffer = smpBuf.hum; humSrc.loop = true; humSrc.loopStart = .4; humSrc.loopEnd = 2.6;
-      humGain.gain.setValueAtTime(0, ctx.currentTime); humGain.gain.linearRampToValueAtTime(.05, ctx.currentTime + .6); humSrc.connect(humGain); humGain.connect(ctx.destination); humSrc.start(ctx.currentTime, .4);
+      humGain.gain.setValueAtTime(0, ctx.currentTime); humGain.gain.linearRampToValueAtTime(.05, ctx.currentTime + .6); humGain.gain.setValueAtTime(.05, ctx.currentTime + 5); humGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 8); humSrc.connect(humGain); humGain.connect(ctx.destination); humSrc.start(ctx.currentTime, .4);
+      const hs = humSrc; clearTimeout(humTo); humTo = setTimeout(() => { try { hs.stop(); } catch (e) { /* ignore */ } if (humSrc === hs) { humSrc = null; humGain = null; } }, 8300);   // the hum fades out after a few seconds: it should not sit under the music
     } else if (humSrc) {
-      const h = humSrc, g = humGain; humSrc = null; humGain = null; const n = ctx.currentTime; g.gain.cancelScheduledValues(n); g.gain.setTargetAtTime(0, n, .08); setTimeout(() => { try { h.stop(); } catch (e) { /* ignore */ } }, 500);
+      clearTimeout(humTo); const h = humSrc, g = humGain; humSrc = null; humGain = null; const n = ctx.currentTime; g.gain.cancelScheduledValues(n); g.gain.setTargetAtTime(0, n, .08); setTimeout(() => { try { h.stop(); } catch (e) { /* ignore */ } }, 500);
     }
   } catch (e) { /* ignore */ }
 }
