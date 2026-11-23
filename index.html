@@ -192,8 +192,8 @@ svg polyline{stroke:var(--ink)}
 .cdrot::after{content:"";position:absolute;left:50%;top:5px;width:6px;height:16px;margin-left:-3px;border-radius:2px;background:var(--red);
   box-shadow:0 0 6px rgba(203,74,54,.5)}
 .cdrot .lbl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.cdhole svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cdhole{position:absolute;inset:34%;border-radius:50%;pointer-events:none;z-index:2;
-  background:radial-gradient(circle closest-side,transparent 0 55%,rgba(112,120,130,.85) 55% 56.6%,rgba(255,255,255,.94) 56.6% 70%,rgba(105,113,123,.7) 70% 71.6%,rgba(250,251,252,.9) 71.6% 82%,#9eb0bf 82% 85.5%,#1f2524 85.5% 100%);
   box-shadow:0 0 0 1px #6b727b,0 0 0 2px rgba(255,255,255,.7)}
 .hubbtn{position:absolute;border-radius:50%;z-index:6;touch-action:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
   background:none;box-shadow:none}
@@ -2022,7 +2022,7 @@ let mechArm;
   mechArm = mechEl.querySelector('.cdarm');
 }
 const disc = el('cdisc', chassis, 'left:' + (JX - 168) + 'px;top:' + (JY - 168) + 'px;width:336px;height:336px');
-const cdrot = el('cdrot', disc); el('cdhole', disc);
+const cdrot = el('cdrot', disc); const cdHole = el('cdhole', disc); cdHole.innerHTML = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="27.900" fill="none" stroke="rgba(112,120,130,.85)" stroke-width="0.920"/><circle cx="50" cy="50" r="31.650" fill="none" stroke="rgba(255,255,255,.94)" stroke-width="6.820"/><circle cx="50" cy="50" r="35.400" fill="none" stroke="rgba(105,113,123,.7)" stroke-width="0.920"/><circle cx="50" cy="50" r="38.400" fill="none" stroke="rgba(250,251,252,.9)" stroke-width="5.320"/><circle cx="50" cy="50" r="41.875" fill="none" stroke="#9eb0bf" stroke-width="1.870"/><circle cx="50" cy="50" r="46.475" fill="none" stroke="#1f2524" stroke-width="7.570"/><path d="M59.76 19.95 A31.6 31.6 0 0 1 70.31 25.79" fill="none" stroke="rgba(96,106,118,.42)" stroke-width="1.1" stroke-linecap="round"/><path d="M70.31 74.21 A31.6 31.6 0 0 1 65.80 77.37" fill="none" stroke="rgba(96,106,118,.42)" stroke-width="1.1" stroke-linecap="round"/><path d="M23.80 67.67 A31.6 31.6 0 0 1 18.42 48.90" fill="none" stroke="rgba(96,106,118,.42)" stroke-width="1.1" stroke-linecap="round"/></svg>';
 const irisEl = el('cdiris', disc); let irOff = 0;   // the iridescent sheen: its own layer above the label, its own switch (IRIS)
 const irOn = () => !!S.iris && !S.dsk;   // the rainbow belongs to the clear disc: a white one has nothing to refract
 function irisSet() { irisEl.style.display = irOn() ? '' : 'none'; if (irOn()) irisEl.style.transform = 'rotate(' + ((irOff - discAng * .3) % 360).toFixed(1) + 'deg)'; }
@@ -2263,6 +2263,9 @@ function splash() {
     requestAnimationFrame(step);
   })(t0);
 }
+/* no double-tap or pinch zoom anywhere on the player (iOS Safari ignores user-scalable) */
+{ let lt = 0; document.addEventListener('touchend', e => { const n = Date.now(); if (n - lt < 400 && e.cancelable && !(e.target.closest && e.target.closest('input,textarea,select,#lbed,.lk'))) e.preventDefault(); lt = n; }, { passive: false });
+  ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(t => document.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false })); }
 pwr.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); ctx.resume(); pwrSnd(0); pwr.classList.add('gone'); setTimeout(() => { pwr.style.display = 'none'; }, 400); splash(); });
 
 /* ================= ui hooks ================= */
@@ -2296,7 +2299,7 @@ function step(now) {
     const du = audio.duration || (SCR.buf && SCR.buf.duration) || 0, pr = du > 0 ? clamp(curPos() / du, 0, 1) : 0;
     ds += (DISC_DPS(pr) * dv - ds) * (1 - Math.exp(-dt / .16)); if (Math.abs(ds) < .5) ds = 0; discAng += ds * dt;
   } else { dv = SCR.active ? SCR.rate : dv; ds = 198 * dv; }
-  if (discAng !== lastAng) { const tf = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; cdrot.style.transform = tf; if (mixOv) mixOv.style.transform = tf; spn.style.transform = tf; if (irOn()) irisEl.style.transform = 'rotate(' + ((irOff - discAng * .3) % 360).toFixed(1) + 'deg)'; lastAng = discAng; }
+  if (discAng !== lastAng) { const tf = 'rotate(' + (discAng % 360).toFixed(2) + 'deg)'; cdrot.style.transform = tf; if (mixOv) mixOv.style.transform = tf; spn.style.transform = tf; cdHole.style.transform = tf; if (irOn()) irisEl.style.transform = 'rotate(' + ((irOff - discAng * .3) % 360).toFixed(1) + 'deg)'; lastAng = discAng; }
   const d = audio.duration; setRing(isFinite(d) && d > 0 && cur() ? curPos() / d : 0);
   if (!splashing && now - lastDraw >= 50 && now > uiBusyUntil && !document.hidden) { lastDraw = now; drawDisplay(now); }
 }

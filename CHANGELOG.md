@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.40
+- The disc's centre ring is now vector-drawn (crisp, no stepped edges) and turns with the disc; it carries faint moulded marks so the rotation is visible.
+- Double-tap and pinch zoom are blocked everywhere on the player (landscape double-tap on buttons zoomed the page).
+
 ## 1.0.39
 - Power-on sound on the splash screen (plays even while the clicks are off).
 - The white disc is now solid and covers the drive deck; the deck stays underneath it.
