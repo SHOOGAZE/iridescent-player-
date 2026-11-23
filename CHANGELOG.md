@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.39
+- Power-on sound on the splash screen (plays even while the clicks are off).
+- The white disc is now solid and covers the drive deck; the deck stays underneath it.
+- Varispeed fader stays put when the disc style changes.
+
+## 1.0.38
+- Label style F is now a CD-R: the printed block of a blank on top, the title and artist in marker pen below, the note under them.
+- New label style I (pick it by hand): a numbered tracklist of the queue with the playing disc marked.
+- The drive deck under the disc stays when the disc is switched to white (it shows through, fainter).
+- README: label styles, drive sounds (off by default, hold LIB).
+
+## 1.0.37
+- The clip of the deck details to the disc (1.0.36) is reverted; back to the 1.0.35 deck.
+- The white ring around the hub while playing is removed, together with the offset shadows drawn under the hub (they turned with it and left a grey crescent that flickered against the disc) and the motor well around it.
+
 ## 1.0.35
 - FF / REW now whirr like a drive searching; the pitch climbs while the button is held.
 - New spin-up on PLAY, new disc loading sound (tray closing with a thud), and a case open / close sound for the library.
