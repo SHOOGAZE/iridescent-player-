@@ -378,11 +378,13 @@ function toLocal(dx, dy) { return { x: dx / view.s, y: dy / view.s }; }
 const saProbe = document.createElement('div'); saProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)'; document.body.appendChild(saProbe);
 function fit() {
   const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(saProbe);
-  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0, st = parseFloat(cs.paddingTop) || 0;
+  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0; let st = parseFloat(cs.paddingTop) || 0;
+  if (vh > vw && st < 20 && (navigator.standalone || matchMedia('(display-mode: standalone)').matches)) st = Math.max(screen.height, screen.width) >= 800 ? 47 : 20;   // installed app, translucent status bar: the content runs under the notch even if the inset reads 0
+  st += 4;
   const aw = vw - sl - sr, ah = vh - st;
   const s = Math.min(Math.min(aw / (PW + 26), ah / (PH + 26)), 2);
   view.s = s;
-  stage.style.transform = 'translate(' + (sl + (aw - PW * s) / 2) + 'px,' + (st + (ah - PH * s) / 2) + 'px) scale(' + s + ')';
+  stage.style.transform = 'translate(' + (sl + (aw - PW * s) / 2) + 'px,' + (st + (ah - PH * s) * (vh > vw ? .8 : .5)) + 'px) scale(' + s + ')';
   glowFit();
   if (typeof landSync === 'function') landSync();
 }
@@ -542,6 +544,7 @@ function mkSwitch(x, y, on, onChange, label) {
 const SK = 'deck.s', CK = 'deck.cues';
 const S = Object.assign({ vol: .7, filt: .5, dsk: 0, crush: .4, fxCrush: 0, fxFilt: 1, lock: 0, clk: 0, mode: 0, tmode: 0, scr: 1, sync: 0, q: 0, ls: 2, jm: 0, bj: 1, iris: 1 },
   (() => { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch (e) { return {}; } })());
+if (!S.clkv) { S.clkv = 1; S.clk = 1; }   // sounds are on by default now (one-time switch; LIB long-press still toggles)
 S.vari = 0; // varispeed always starts at 0
 let saveT = 0;
 const saveNow = () => { saveT = 0; try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) { /* ignore */ } };
@@ -683,7 +686,7 @@ function keepAlive(p) {   // a silent looping <audio> keeps the page a "media pa
   } catch (e) { /* ignore */ }
 }
 let lastPl = false;
-function engState(p) { if (p !== lastPl) { lastPl = p; if (p) { smpInit(); smp('spin', .3, 1, 0); } motor(p); } keepAlive(p && SCR.active); if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
+function engState(p) { if (p !== lastPl) { lastPl = p; if (p) { smpInit(); smp('spin', .3, 1, 0); } else if (cur()) smp('spin', .2, .72, 0); motor(p); } keepAlive(p && SCR.active); if (p) wakeOn(); else wakeOff(); ui.playState(p); if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = p ? 'playing' : 'paused'; } catch (e) { /* ignore */ } } }
 const scrOK = () => S.scr && cur() && cur().buf;
 const isPlaying = () => (SCR.active ? SCR.wasPlaying : !audio.paused);
 function rawPlay() { applyRate(true); const p = audio.play(); if (p && p.catch) p.catch(() => ui.msg('PLAY ERR', 1600)); }
@@ -963,6 +966,7 @@ function scanSnd(on, dir) {   // FF / REW: the drive whirrs while the head runs;
     }
   } catch (e) { /* ignore */ }
 }
+function markTick() { smp('clickr', .4, 1.9, 0); }   // a small high tick when a cue or loop point is stored
 let humTo = 0;
 function motor(on) {   // a quiet drive hum while a disc plays
   try {
@@ -1497,7 +1501,7 @@ function cueDown() {
   if (!cur()) return; const p = curPos();
   if (isPlaying()) { if (SCR.active) { SCR.wasPlaying = false; SCR.motor = 0; SCR.rate = 0; } else audio.pause(); seek(mainCue); ui.playState(false); ui.msg('BACK TO CUE'); return; }
   if (Math.abs(p - mainCue) < .06) { cuePrev = true; doPlay(); ui.msg('CUE PREVIEW'); }
-  else { mainCue = qSnap(p); ui.msg('MAIN CUE ' + fmt(mainCue)); }
+  else { mainCue = qSnap(p); markTick(); ui.msg('MAIN CUE ' + fmt(mainCue)); }
 }
 function cueUp() {
   if (!cuePrev) return; cuePrev = false;
@@ -1521,13 +1525,13 @@ function loopRollEnd() {
   if (!slip) return; const s = slip; slip = null; loop.on = false; loop.auto = false; loop.a = loop.b = null;
   seek(s.pos + (performance.now() - s.t0) / 1000 * s.r); ui.msg('SLIP'); ui.loopChanged();
 }
-function loopA() { if (!cur()) return; if (loop.on && loop.auto) { loopSize(-1); return; } loop.auto = false; loop.a = qSnap(curPos(), true); if (loop.b != null && loop.b <= loop.a) { loop.b = null; loop.on = false; } ui.msg('LOOP IN ' + fmt(loop.a)); ui.loopChanged(); }
+function loopA() { if (!cur()) return; if (loop.on && loop.auto) { loopSize(-1); return; } loop.auto = false; loop.a = qSnap(curPos(), true); if (loop.b != null && loop.b <= loop.a) { loop.b = null; loop.on = false; } markTick(); ui.msg('LOOP IN ' + fmt(loop.a)); ui.loopChanged(); }
 function loopB() {
   if (!cur()) return; if (loop.on && loop.auto) { loopSize(1); return; } const t = qSnap(curPos(), true);
   if (loop.a == null) { ui.msg('SET IN FIRST'); return; }
   let tb = t; if (tb <= loop.a + .15 && effBpm(cur())) tb = loop.a + beatLen(cur());   // same beat: the shortest loop is one beat
   if (tb <= loop.a + .15) { ui.msg('OUT AFTER IN'); return; }
-  loop.b = tb; loop.on = true; loop.auto = false; ui.msg('LOOP ' + fmt(loop.a) + '-' + fmt(loop.b)); ui.loopChanged();
+  loop.b = tb; loop.on = true; loop.auto = false; markTick(); ui.msg('LOOP ' + fmt(loop.a) + '-' + fmt(loop.b)); ui.loopChanged();
 }
 function loopToggle() {
   if (!cur()) return;
@@ -1706,24 +1710,32 @@ function mkFader(o) {
   f.addEventListener('pointerdown', e => {
     e.preventDefault(); if (drag) return;
     try { f.setPointerCapture(e.pointerId); } catch (_) { }
-    drag = { id: e.pointerId, y: e.clientY, v0: v, moved: false }; f.classList.add('act');
+    tv = v; drag = { id: e.pointerId, y: e.clientY, v0: v, moved: false }; f.classList.add('act');
   });
   f.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== drag.id) return;
     const dy = e.clientY - drag.y; if (Math.abs(dy) > 3) drag.moved = true; if (!drag.moved) return;
-    let nv = clamp(drag.v0 - toLocal(0, dy).y / o.len, 0, 1);
+    let nv = clamp(drag.v0 - (o.res || 1) * toLocal(0, dy).y / o.len, 0, 1);
     if (o.detent && Math.abs(nv - .5) < o.detent) nv = .5;
-    if (nv !== v) { v = nv; render(); o.onChange(v); }
+    if (!o.res) { if (nv !== v) { v = nv; render(); o.onChange(v); } return; }
+    tv = nv; if (!raf) raf = requestAnimationFrame(glide);   // a weighted fader: the cap trails the finger a little and travels less than it
   });
+  let tv = v, raf = 0, lt = 0;
+  const glide = t => {
+    raf = 0; const dt = Math.min(.05, lt ? (t - lt) / 1000 : .016); lt = t;
+    const nv = Math.abs(tv - v) < .0008 ? tv : v + (tv - v) * (1 - Math.exp(-dt / .07));
+    if (nv !== v) { v = nv; render(); o.onChange(v); }
+    if (v !== tv) raf = requestAnimationFrame(glide); else lt = 0;
+  };
   const end = e => {
     if (!drag || e.pointerId !== drag.id) return;
     const d0 = drag; drag = null; f.classList.remove('act');
-    if (!d0.moved && e.type === 'pointerup') { const n = performance.now(); if (n - lastTap < 320 && o.def != null) { v = o.def; render(); o.onChange(v); } lastTap = n; }
+    if (!d0.moved && e.type === 'pointerup') { const n = performance.now(); if (n - lastTap < 320 && o.def != null) { v = tv = o.def; render(); o.onChange(v); } lastTap = n; }
   };
   f.addEventListener('pointerup', end); f.addEventListener('pointercancel', end);
-  return { el: f, set(nv) { v = nv; render(); }, get value() { return v; } };
+  return { el: f, set(nv) { v = tv = nv; render(); }, get value() { return v; } };
 }
-const vFader = mkFader({ x: 462, y: 292, len: 290, value: .5, def: .5, detent: .018, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
+const vFader = mkFader({ x: 462, y: 292, len: 290, value: .5, def: .5, detent: .018, res: .6, onChange: v => { S.vari = (v - .5) * 2; if (Math.abs(S.vari) < .02) S.vari = 0; applyRate(); ui.varChanged(); if (S.sync && effBpm(cur())) MASTER = effBpm(cur()) * baseRate(); } });
 
 /* ---- hub = the spindle: a dark cap that glows red while the disc plays (PLAY lives in the transport row) ---- */
 const hub = el('hubbtn', chassis, 'left:' + (JX - 48) + 'px;top:' + (JY - 48) + 'px;width:96px;height:96px');
@@ -2523,7 +2535,9 @@ function landPcb(vw, vh, sl, sr, cx, sd) {
 }
 function landLayout() {
   const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(saProbe);
-  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0, st = parseFloat(cs.paddingTop) || 0;
+  const sl = parseFloat(cs.paddingLeft) || 0, sr = parseFloat(cs.paddingRight) || 0; let st = parseFloat(cs.paddingTop) || 0;
+  if (vh > vw && st < 20 && (navigator.standalone || matchMedia('(display-mode: standalone)').matches)) st = Math.max(screen.height, screen.width) >= 800 ? 47 : 20;   // installed app, translucent status bar: the content runs under the notch even if the inset reads 0
+  st += 4;
   const sd = vh * 1.2 / 368, cx = vw * .45;   // bigger disc, a little left of centre so the display keeps its corner
   lDisc.style.transform = 'translate(' + (cx - JX * sd) + 'px,' + (vh / 2 - JY * sd) + 'px) scale(' + sd + ')';
   const w = Math.min((vw - sl - sr) * .25, 250), so = w / (DW * DSC), x = vw - sr - 22 - w, y = st + 20;
@@ -2548,6 +2562,7 @@ const _playState = ui.playState; ui.playState = p => { keepAlive(!!p && SCR.acti
 fit();
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', () => setTimeout(fit, 120));
+window.addEventListener('load', () => { setTimeout(fit, 150); setTimeout(fit, 900); }); window.addEventListener('pageshow', () => setTimeout(fit, 50)); document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(fit, 80); });
 ui.cuesChanged(); ui.loopChanged(); ui.playState(false); ui.varChanged();
 (async () => {   // bring the saved shelf back
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignore */ }

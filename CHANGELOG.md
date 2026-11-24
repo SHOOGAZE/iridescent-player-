@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.45
+- Drive and key sounds are on by default (hold LIB still switches them off).
+- Pausing plays a short spin-down; storing a cue or a loop point gives a small tick.
+
+## 1.0.44
+- Portrait: the player sits lower on the screen (most of the spare room goes above it, clear of the notch).
+
+## 1.0.43
+- Varispeed fader has weight: the cap travels a little less than the finger and trails it slightly, so small moves are easy and it feels like a real slider.
+
+## 1.0.42
+- Notch / Dynamic Island: the top row keeps clear of it. The safe area is re-read after load and on return to the app, and an installed app never reads it as zero.
+
 ## 1.0.41
 - The drive hum fades out a few seconds after play starts, so it no longer sits under the music; spin-up and stop sounds stay.
 
