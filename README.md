@@ -1,102 +1,82 @@
 # IRIDESCENT
 
-`v1.0` · single-file PWA · MIT
+**[▶ Open the app](https://shoogaze.github.io/iridescent-player-/)**  ·  works in the browser, installs to the Home Screen
 
-**An analog-digital CD player for the phone, tablet and desktop.** Load your own audio files, spin them on a jog disc, scratch, drop hot cues, loop, match the tempo and crunch it with a bit-crusher and a filter. One `index.html`, no build step, no dependencies.
+[ZIIION](https://github.com/SHOOGAZE/ziiion-synth) &nbsp;·&nbsp; **IRIDESCENT**
 
-**[Open the live app](https://shoogaze.github.io/iridescent-player-/)** — on iPhone, open it in Safari and use Share → Add to Home Screen.
+An analog-digital CD player in a single file. Load your own audio, spin it on a jog disc, scratch, drop hot cues, loop, match the tempo and crunch it with a bit-crusher and a filter. The look is frosted plastic over a visible PCB, a dot-matrix display, white ringed knobs and one red accent.
 
-<img src="screens/screenshot.jpg" width="300" alt="IRIDESCENT">
-
-
-IRIDESCENT belongs to a small family of two skeuomorphic, single-file instruments built around one look: frosted plastic over a visible PCB, a dot-matrix display, white ringed knobs and a single red accent.
-
-## The family
-
-| Project | What it is |
-| --- | --- |
-| [**ZIIION**](https://github.com/SHOOGAZE/ziiion-synth) | The pocket bass-line machine. It defines the visual language: panel, knobs, switches, dot-matrix display. |
-| **IRIDESCENT** | The CD player. ZIIION's face, with a transport, jog disc and tempo tools built for a disc. |
-
-IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB traces, 5x7 dot-matrix font) and carries a one-knob FILTER and its own digital CRUSH.
-
-## Screens
-
-The top of the deck holds the display with the LIB button, the jog disc with its progress ring and the VARISPEED fader. The lower half is a carousel of big-button pages (swipe sideways, two dots show where you are): pads and transport, functions and FX.
-
-![Pages](screens/pages.jpg)
-
-Landscape on a phone is a viewing mode: a big disc, the display in the corner and a frosted bar that fades away after a few seconds (tap the screen to bring it back).
-
-<img src="screens/landscape.jpg" width="640" alt="Landscape">
-
-A disc with its printed label (banner layout, edited in LIBRARY → LABEL):
-
-<img src="screens/label.jpg" width="300" alt="Disc label">
-
-The eight label styles (A–H) and the tracklist (I); each disc gets its own colour, or pick WHITE with a long press on JOG:
-
-<img src="screens/discs.jpg" width="560" alt="Disc label styles">
-
-<img src="screens/white.jpg" width="300" alt="White disc">
-
-In the app, press HELP and tap any control: the dot-matrix display names it and scrolls what it does.
-
-Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous. The mouse wheel over the disc scrubs or bends.
+It plays your files and nothing leaves the device: no account, no upload, no build step, no dependencies.
 
 ## Features
 
-- **The disc**: it turns at a CD's speed (fast near the hub, slowing toward the rim as the track plays), translucent so the board shows through. Hold JOG to flip it between COLOR (a hue per disc) and WHITE. Grab it with a finger to hold it still, move it both ways to scratch, let go and it spins back up. The rainbow sheen on top of it stays put against the light, drifts with the spin and follows your finger; IRIS switches it on or off. It is drawn on the clear (COLOR) disc only; the WHITE disc has nothing to refract. The clear disc also shows the drive beneath it: a moulded deck with recessed wells for the motor and the pivot, and a slider in a curved slot that travels from the hub to the rim as the track plays.
-- **Disc label**: every disc gets a printed face generated from the file (title and artist from the file name, real length, format and size) in one of eight layouts (classic, banner, technical, dotted, ruled card, a CD-R with the title in marker pen, stripe, handwritten mixtape), a ninth one that prints the queue as a numbered tracklist (pick it by hand, it is never chosen by AUTO), plus ART, which puts the cover embedded in the file on the disc (never picked by AUTO) or left blank with just a fine rim line. Open LIBRARY → LABEL to edit two lines and a handwritten note, pick a layout (AUTO picks one per disc) or reset. Labels are stored on the device. No brand names or logos.
-- **Beat jump**: on page 2 the BEAT JUMP button jumps the playhead by the shown number of beats (+1, +4, +8, +16 or back −1 … −16). Hold it to change the step. Needs a detected BPM.
-- **Landscape (phones)**: a viewing mode. The disc fills the middle, the display sits top right. Tap the screen and a frosted bar slides up with REW / PLAY / FF and CUE / FX / LOOP (FX switches crush + filter on or off together). Bar, display and LIB fade away after 3 seconds. Pads, knobs and VARISPEED are in portrait only.
-- **Rainbow sheen**: a spectrum layer on the disc that stays put against the light, drifts with the spin and follows your finger. It needs no motion permission; IRIS next to JOG switches it.
-- **Disc change**: the disc sits in a recessed well; a frosted glass shutter with one cut corner slides over the disc, the label changes underneath, and the shutter slides away (LOAD on the display and a soft load sound). The spindle has three claws that turn with the disc. With automix the old disc face dissolves into the new one for the length of the crossfade.
-- **Automix**: tap the AUTOMIX lamps (or hold MODE) to cycle OFF / 4 / 8 / 16 s; the lamp blinks while a crossfade runs. The next disc is decoded ahead and fades in on the beat grid (tempo-matched when SYNC is on), at the end of a track and on NEXT. Shown as `X` on the display. Buffer engine only; not with a very large file.
-- **Drive and key sounds**: on by default (hold LIB to switch them off): key clicks (pads, switches and knobs stay silent), the disc loading and ejecting, the drive spinning up on PLAY, a quiet hum while playing, a searching whirr on FF / REW, and a plastic case sound for the library. They go straight to the output, not through the player's effects.
-- **Disc physics** – platter spin-up and brake, flick inertia, REW/FF as tape-style search with pitch, auto loops (1/4 to 4 bars), loop roll with slip, CDJ cue, JOG on or off (tap to switch scratching).
-- **Tempo** – BPM and beat grid are detected on load (cached per file); beat ticks on the display. **SYNC** locks the deck to the master tempo via varispeed (up to 16 %, half/double aware), hold it for **QUANTIZE** (cues and loops snap to the beat). Tap the BPM on the display to fix half/double time.
-- **CD behaviour**: PLAY spins the disc up first (about half a second), then the sound starts at full speed; PAUSE cuts the sound at once with no pitch fall (that is for tapes) while the disc spins down. Scratching keeps its vinyl feel.
-- **Buffer engine**: the disc is decoded and played from memory, so VARISPEED glides smoothly and play/pause has no dropout. LOCK (pitch lock) uses its own WSOLA time-stretch in an AudioWorklet, so tempo changes keep the pitch. With the screen locked it keeps playing from the buffer (a timer drives the engine and the next track starts on its own). Add `#nobuf` to the URL to switch it off.
-- **Scratch**: touch the disc and it stops like a record under your finger; move it back and forth to scratch, forwards and backwards, with vinyl friction noise and the full effect chain. Release and the disc plays on. (Experimental: `index.html#gapless` hands the sound back without the ~0.4 s hole iOS leaves after a seek; it is off by default until it is verified on a real iPhone.) The SCR key turns it off; then the jog only scrubs while paused and nudges the speed while playing.
-- **8 hot cues** per track: tap to set or jump, hold to clear. Stored per file.
-- **A-B loop** (the points snap to the beat grid when the tempo is known; the shortest loop is one beat), **MAIN CUE**, **PREV / REW / PLAY / FF / NEXT**, play modes (normal, repeat one, repeat all, shuffle). Hold PLAY to stop and return to the start.
-- **Tap tempo**: when the detector is unsure the BPM on the display gets a `?`. Tap the BPM along with the music (4 taps or more) to set tempo and beat grid by hand; hold it to flip x2 / half.
-- **Weighted knobs**: values glide on a damped spring, a quick flick keeps turning for a moment like a DJ-deck encoder, double tap glides back to default, and the audio parameters morph instead of jumping.
-- **Varispeed** fader, range +/-16 percent, with **LOCK** to keep pitch. Output level is fixed (there is no volume fader); the phone's own volume sets loudness.
-- **Level meter**: two L/R LED columns on the display, read after the limiter, with red clip segments; useful with CRUSH.
-- **FX**: CRUSH (lower bit depth and sample rate, early digital grit), FILTER (one knob: low-pass to the left, high-pass to the right, open in the middle). No EQ and no compressor: the disc is already mastered, and a limiter at the output protects the level.
-- **Phone in landscape**: switches to the viewing mode above automatically (also in the installed app).
-- **Waveform** on the display and a thin progress ring around the disc that also shows your cue points and the loop.
-- **Resume**: remembers the position of each file; load it again and it picks up where you left it.
-- **Disc cover**: every disc gets its own iridescent colors, derived from the file.
-- **Disc change animation**: a frosted shutter slides over the disc while the label changes.
-- **Library** (the LIB button next to the display): your files are stored in the browser (IndexedDB) and survive a reload. A shelf of big iridescent discs, each with its printed label and length; the `#` button opens a number pad to jump to a track by its number; the playing disc has a red ring. Tap a disc to load it, tap the cross to remove it. New discs drop in one by one.
-- **HELP mode**: press HELP, then tap any control; the dot-matrix display names it and scrolls what it does. Nothing is triggered while help is on. Hints come in English and Russian (the display has a Cyrillic dot-matrix font): hold HELP to switch; the language follows the browser by default.
-- Media Session controls on the lock screen, Wake Lock, silent-switch workaround on iOS.
-- Built-in demo disc (three synthesized tracks), so it plays with nothing loaded.
+- **The disc**: it turns at a CD's speed, fast near the hub and slower toward the rim. Grab it to hold it still, move it both ways to scratch, let go and it spins back up. Hold JOG to flip between COLOR (a hue per disc) and a solid WHITE disc
+- **Printed labels**: every disc gets a face generated from its file (title, artist, length, format) in one of eight layouts, a numbered tracklist, ART from the cover embedded in the file, or blank. Edit two lines and a note in LIBRARY → LABEL
+- **Drive**: PLAY spins the disc up first, then the sound starts at full speed. PAUSE cuts the sound at once. Clear discs show the moulded deck underneath with a slider that travels from the hub to the rim
+- **Tempo**: BPM and beat grid are detected on load. **SYNC** locks the deck to a master tempo through varispeed (±16 %), **QUANTIZE** snaps cues and loops to the beat, tap tempo fixes a wrong BPM
+- **Automix**: the next disc is decoded ahead and fades in on the beat grid, 4, 8 or 16 s
+- **Cues and loops**: 8 hot cues per track, A-B loop, auto loops from 1/4 to 4 bars, loop roll, beat jump
+- **Varispeed** with a weighted fader and **LOCK** to keep the pitch (own time-stretch, so tempo changes stay in tune)
+- **FX**: CRUSH (bit depth and sample rate) and FILTER (one knob: low-pass left, high-pass right). A limiter guards the output
+- **Sounds**: soft key clicks, a drive that spins up, a quiet hum, a searching whirr on FF / REW, a case sound for the library. On by default, hold LIB to switch them off
+- **Library**: your files stay in the browser as a shelf of discs; a number pad jumps to a track
+- **Landscape**: a viewing mode with a big disc and a frosted bar that fades away after a few seconds
+- **HELP**: press HELP, tap any control and the display names it and scrolls what it does (English and Russian)
+- **Lock screen**: keeps playing with the screen locked, with lock-screen controls
+- **Installable**: add to the Home Screen and it works offline (PWA)
 
-## Use
+Keyboard: `Space` play / pause, `←` `→` seek 5 s, `N` / `P` next / previous.
 
-Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and others the browser can decode). On iPhone, add it to the home screen: it opens full-screen as an app (`manifest.webmanifest`) and rotates like any app (portrait is the full panel, landscape is the viewing mode).
+## Screenshots
 
-For offline use and installation, host the folder (for example on GitHub Pages) so `manifest.webmanifest` and `sw.js` are served. Opened as a plain file it still works, without the offline cache.
+<p align="center">
+  <img src="screens/screenshot.jpg" alt="Player" width="23%">
+  <img src="screens/pages.jpg" alt="Pages" width="46%">
+  <img src="screens/white.jpg" alt="White disc" width="23%">
+</p>
+<p align="center"><sub>Player &nbsp;·&nbsp; Pages: pads, transport, functions, FX &nbsp;·&nbsp; White disc</sub></p>
 
-## Icon
+### Labels
 
-The home-screen icon is an iridescent disc in a bezel with a white hub and a red accent square, on a frosted board with thin PCB traces and ring vias, in the ZIIION style. It is drawn at runtime by the page; PNG exports are in `icons/` (512, 180, 32 px), and the manifest uses them.
+<p align="center">
+  <img src="screens/label.jpg" alt="Disc label" width="25%">
+  <img src="screens/discs.jpg" alt="Label styles" width="46%">
+</p>
+<p align="center"><sub>A disc with its label &nbsp;·&nbsp; Styles A–H and the tracklist</sub></p>
+
+### Landscape
+
+<p align="center">
+  <img src="screens/landscape.jpg" alt="Landscape" width="70%">
+</p>
+
+## The nano-tech family
+
+Two single-file instruments in one design language: frosted plastic over a faint circuit board, a dot-matrix display, raised white controls and one muted red accent.
+
+| App | What it is | Live |
+|---|---|---|
+| [ZIIION](https://github.com/SHOOGAZE/ziiion-synth) | A pocket acid bass-line synth and step sequencer; it defines the look | [open](https://shoogaze.github.io/ziiion-synth/) |
+| **IRIDESCENT** (this one) | A CD player with a jog disc and tempo tools built for a disc | [open](https://shoogaze.github.io/iridescent-player-/) |
+
+IRIDESCENT reuses the ZIIION design system (knobs, buttons, switches, LEDs, PCB traces, 5×7 dot-matrix font) and adds a disc, a transport and its own FX. The apps do not exchange data: each one works on its own.
+
+## Run
+
+Live build: https://shoogaze.github.io/iridescent-player-/
+
+Open `index.html` in a browser, tap to power on, press **LIB** and add audio files (mp3, m4a, wav, flac, ogg and anything else the browser can decode). No build step. For GitHub Pages: Settings → Pages → deploy from branch `main`, root.
+
+**Install on iPhone:** open the site in Safari → Share → Add to Home Screen. It then runs full-screen and offline. Keep `manifest.webmanifest`, `sw.js` and the `icons/` folder next to `index.html`.
+
+Without hosting (a plain file) it still plays, only without the offline cache.
 
 ## Notes
 
-- Files stay on your device; nothing is uploaded.
-- Waveform peaks are computed for files up to 110 MB.
-- Layout: `index.html`, `manifest.webmanifest`, `sw.js`, `icons/`, `screens/` (all pictures used in this README).
-- Tested in headless Chromium. Behaviour on iOS Safari (pitch lock, lock screen, silent switch) should be confirmed on a real device.
-
-## Roadmap
-
-- Album mode: a playlist shown as one disc.
+- Files stay on your device. Waveform peaks are computed for files up to 110 MB.
+- A built-in demo disc plays with nothing loaded.
+- Tested in headless Chromium. Sound, pitch lock, the lock screen and the silent switch on iOS Safari still need confirming on a real phone.
 
 ## License
 
-MIT, copyright Kirill Kinderhart. See `LICENSE`.
+[MIT](LICENSE) © 2026 Kirill Kinderhart
