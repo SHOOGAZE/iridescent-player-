@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.47
+- If iOS parks the audio engine (call, notification, route change) the player now wakes it again by itself, and any touch does too; a TAP TO RESUME message shows if it stays parked. This is the likely cause of a frozen disc with no sound.
+
+## 1.0.46
+- Output level +4 dB (the limiter still guards the peaks).
+
 ## 1.0.45
 - Drive and key sounds are on by default (hold LIB still switches them off).
 - Pausing plays a short spin-down; storing a cue or a loop point gives a small tick.

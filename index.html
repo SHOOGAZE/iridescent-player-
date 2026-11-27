@@ -649,7 +649,7 @@ function applyFx() {
   const t = ctx.currentTime;
   const P = (prm, val, tc) => { if (fxLast.get(prm) === val) return; fxLast.set(prm, val); prm.setTargetAtTime(val, t, tc); };   // only parameters that really changed reach the audio thread
   if (!swapBusy && E.vol.gain.value < .01) fxLast.delete(E.vol.gain);   // safety: the master level can never stay muted after a disc change
-  P(E.vol.gain, S.vol * S.vol * 1.2, .04);
+  P(E.vol.gain, S.vol * S.vol * 1.9, .04);
   if (E.crB) { const a = S.crush; P(E.crB, 16 - a * 9, .02); P(E.crH, 1 + a * a * 7, .02); }
   const fq = filtHz(S.filt); P(E.fl.frequency, fq.lp, .05); P(E.fh.frequency, fq.hp, .05); P(E.fl.Q, fq.q, .05); P(E.fh.Q, fq.q, .05);
   E.crush.set(S.fxCrush); E.flt.set(S.fxFilt);
@@ -923,8 +923,8 @@ function swapTrack(j, play) {   // manual change while playing: the sound fades 
   setTimeout(() => {
     if (tok !== swapTok) return;
     loadTrack(j, true);
-    try { const m = ctx.currentTime, v = S.vol * S.vol * 1.2; g.cancelScheduledValues(m); g.setValueAtTime(0, m); g.linearRampToValueAtTime(v, m + .5); } catch (e) { /* ignore */ }
-    setTimeout(() => { if (tok === swapTok) { swapBusy = false; try { const m = ctx.currentTime; g.cancelScheduledValues(m); g.setValueAtTime(S.vol * S.vol * 1.2, m); } catch (e) { /* ignore */ } } }, 700);
+    try { const m = ctx.currentTime, v = S.vol * S.vol * 1.9; g.cancelScheduledValues(m); g.setValueAtTime(0, m); g.linearRampToValueAtTime(v, m + .5); } catch (e) { /* ignore */ }
+    setTimeout(() => { if (tok === swapTok) { swapBusy = false; try { const m = ctx.currentTime; g.cancelScheduledValues(m); g.setValueAtTime(S.vol * S.vol * 1.9, m); } catch (e) { /* ignore */ } } }, 700);
   }, 200);
 }
 function next() { const j = nextIdx(false); if (j < 0) return; if (mixRequest(j)) return; swapTrack(j, isPlaying()); }
@@ -2280,6 +2280,7 @@ function splash() {
 /* no double-tap or pinch zoom anywhere on the player (iOS Safari ignores user-scalable) */
 { let lt = 0; document.addEventListener('touchend', e => { const n = Date.now(); if (n - lt < 400 && e.cancelable && !(e.target.closest && e.target.closest('input,textarea,select,#lbed,.lk'))) e.preventDefault(); lt = n; }, { passive: false });
   ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(t => document.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false })); }
+document.addEventListener('pointerdown', () => { if (ctx && ctx.state !== 'running') ctx.resume().catch(() => { /* ignore */ }); }, true);   // any touch wakes a parked audio engine
 pwr.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); ctx.resume(); pwrSnd(0); pwr.classList.add('gone'); setTimeout(() => { pwr.style.display = 'none'; }, 400); splash(); });
 
 /* ================= ui hooks ================= */
@@ -2294,10 +2295,15 @@ ui.libBuild = libBuild;
 /* ================= main loop ================= */
 let last = performance.now(), lastDraw = 0, uiBusyUntil = 0, dv = 0, ds = 0;
 const DISC_DPS = p => 2000 - 1200 * p;   // like a real CD: the platter turns faster near the hub and slows toward the rim (about 330 to 130 rpm here)
+let ctxBad = 0, ctxTry = 0;
 function step(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   const playing = isPlaying();
   mixWatch();
+  if (playing && ctx && ctx.state !== 'running') {   // iOS can park the audio engine ('interrupted') after a call, a notification or a route change: the disc freezes and the sound is gone
+    if (!ctxBad) ctxBad = now;
+    if (now - ctxTry > 900) { ctxTry = now; ctx.resume().catch(() => { /* ignore */ }); if (now - ctxBad > 1800) ui.msg('TAP TO RESUME', 1000); }
+  } else ctxBad = 0;
   if (loop.on && loop.b != null && playing && curPos() >= loop.b - .02) seek(loop.a);
   if (SCR.active && playing) savePos(false);
   if (SCR.active) { if (jog.on && !jog.bend) { if (now - jog.t0 > 50) jog.vel *= .72; scrTick(dt, jog.vel); } else scrTick(dt, null); }
